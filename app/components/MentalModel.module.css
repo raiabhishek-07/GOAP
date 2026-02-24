@@ -1,0 +1,234 @@
+.section {
+    padding: var(--section-padding) 24px;
+    position: relative;
+    background: var(--bg-secondary);
+    padding-bottom: 80px;
+}
+
+.section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 64px;
+}
+
+.sectionTag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent-orange);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+}
+
+.header h2 {
+    margin-bottom: 20px;
+}
+
+.lead {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.8;
+}
+
+/* Flow Container */
+.flowContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 64px;
+}
+
+.flowStep {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 550px;
+    transition: all var(--transition-normal);
+}
+
+.flowStep:hover {
+    border-color: var(--border-accent);
+    transform: translateX(8px);
+}
+
+.flowRepeat {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(239, 68, 68, 0.04));
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.flowNum {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-warm);
+    border-radius: 50%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.flowContent h3 {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.flowContent p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    max-width: none;
+}
+
+.flowConnector {
+    display: flex;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+/* Summary Grid */
+.summaryGrid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.summaryCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 20px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    min-width: 130px;
+    transition: all var(--transition-normal);
+}
+
+.summaryCard:hover {
+    border-color: var(--border-accent);
+    transform: translateY(-3px);
+}
+
+.summaryIcon {
+    font-size: 1.8rem;
+}
+
+.summaryLabel {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+}
+
+.summaryDesc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.summaryPlus {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--text-muted);
+}
+
+/* Result Box */
+.resultBox {
+    text-align: center;
+    padding: 32px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.04), rgba(124, 58, 237, 0.04));
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-xl);
+    margin-bottom: 64px;
+}
+
+.resultArrow {
+    font-size: 1.5rem;
+    color: var(--accent-cyan);
+    margin-bottom: 12px;
+}
+
+.resultBox h3 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.resultBox p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 0 auto;
+}
+
+/* Credits */
+.credits {
+    text-align: center;
+}
+
+.creditLine {
+    width: 60px;
+    height: 2px;
+    background: var(--gradient-primary);
+    margin: 0 auto 24px;
+}
+
+.credits p {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.8;
+}
+
+.credits strong {
+    color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+    .summaryGrid {
+        gap: 8px;
+    }
+
+    .summaryCard {
+        min-width: 100px;
+        padding: 16px;
+    }
+
+    .flowStep {
+        padding: 16px 20px;
+    }
+}
