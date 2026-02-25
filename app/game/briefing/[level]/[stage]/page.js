@@ -152,25 +152,7 @@ export default function BriefingPage({ params }) {
     );
 }
 
-function TacticalPanel({ title, children, className = "", borderColor = "border-white/10", titleColor = "text-emerald-500", height = "" }) {
-    return (
-        <section className={`relative bg-black/40 backdrop-blur-md border ${borderColor} p-6 shadow-2xl flex flex-col ${height} ${className}`}>
-            <div className={`absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 ${borderColor.replace('border-', 'border-')}`} />
-            <div className={`absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 ${borderColor.replace('border-', 'border-')}`} />
-
-            <div className="mb-6 flex items-center justify-between">
-                <span className={`text-[9px] font-mono font-black tracking-[0.4em] uppercase ${titleColor}`}>
-                    {title}
-                </span>
-                <span className="text-[7px] font-mono text-slate-700 tracking-tighter">DATA_STREAM_v2.0</span>
-            </div>
-
-            <div className="flex-1">
-                {children}
-            </div>
-        </section>
-    );
-}
+/* TacticalPanel is imported from TacticalUI.js — no local override needed */
 
 function LegendItem({ color, label, isTriangle }) {
     return (

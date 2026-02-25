@@ -6,12 +6,13 @@ export const getGame = () => gameInstance;
 
 /**
  * Initialize the Phaser game only on the client side.
+ * @param {HTMLElement} container - DOM element to render Phaser into
+ * @param {Object} launchOptions - { directLaunch: bool, level: number, stage: number }
  */
-export async function initGame(container) {
+export async function initGame(container, launchOptions = {}) {
     if (typeof window === 'undefined' || !container) return null;
 
     // If a game already exists, destroy it before creating a new one
-    // Phaser canvases are tied to their parent containers
     if (gameInstance) {
         destroyGame();
     }
@@ -32,8 +33,6 @@ export async function initGame(container) {
     const { StatsScene } = await import("./scenes/StatsScene");
     const { LobbyScene } = await import("./scenes/LobbyScene");
 
-    // Ensure we have valid dimensions to avoid "Incomplete Attachment" WebGL errors
-    // clientWidth/Height are usually more reliable for the actual render surface
     const width = Math.max(container.clientWidth || window.innerWidth, 800);
     const height = Math.max(container.clientHeight || window.innerHeight, 600);
 
@@ -45,7 +44,7 @@ export async function initGame(container) {
         backgroundColor: '#020617',
         pixelArt: false,
         antialias: true,
-        powerPreference: 'high-performance', // Can help with WebGL attachment issues
+        powerPreference: 'high-performance',
         scale: {
             mode: Phaser.Scale.RESIZE,
             autoCenter: Phaser.Scale.CENTER_BOTH
@@ -77,6 +76,14 @@ export async function initGame(container) {
     gameInstance = new Phaser.Game(config);
     window.game = gameInstance;
 
+    // Store launch options in the registry so scenes can read them
+    // This tells PreloadScene to skip MainMenuScene and go straight to gameplay
+    if (launchOptions.directLaunch) {
+        gameInstance.registry.set('directLaunch', true);
+        gameInstance.registry.set('directLevel', launchOptions.level || 1);
+        gameInstance.registry.set('directStage', launchOptions.stage || 1);
+    }
+
     return gameInstance;
 }
 
@@ -85,8 +92,6 @@ export async function initGame(container) {
  */
 export function switchScene(sceneKey, data = {}) {
     if (gameInstance && gameInstance.scene) {
-        // Stop all scenes except the target (optional, depends on architecture)
-        // gameInstance.scene.getScenes(true).forEach(s => s.scene.stop());
         gameInstance.scene.start(sceneKey, data);
     }
 }

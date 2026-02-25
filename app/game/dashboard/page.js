@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { SaveSystem } from "../../../lib/game/SaveSystem";
-import { TacticalPanel, TacticalStat, TacticalProgressBar } from "../../../components/game/TacticalUI";
+import { SaveSystem } from "../../lib/game/SaveSystem";
+import { TacticalPanel, TacticalStat, TacticalProgressBar } from "../../components/game/TacticalUI";
 
 /**
  * Tactical Command Dashboard
@@ -14,7 +14,17 @@ export default function CommandDashboard() {
     const [currentTime, setCurrentTime] = useState("");
 
     useEffect(() => {
-        setSummary(SaveSystem.getProgressionSummary());
+        try {
+            setSummary(SaveSystem.getProgressionSummary());
+        } catch (e) {
+            // Fallback if save system has issues
+            setSummary({
+                completionPercent: 0,
+                cognitiveAverages: { planning: 0, adaptability: 0, efficiency: 0 },
+                stats: { highestRank: 'INITIATE', totalKills: 0, totalTasksCompleted: 0, totalTimeSeconds: 0, totalScore: 0, gamesPlayed: 0 },
+                abilities: {}
+            });
+        }
 
         const tick = () => {
             const now = new Date();
@@ -27,40 +37,43 @@ export default function CommandDashboard() {
 
     if (!summary) return null;
 
+    const safeStats = summary.stats || {};
+    const safeCog = summary.cognitiveAverages || {};
+
     return (
-        <div className="flex flex-col min-h-screen bg-slate-950/60 text-slate-200 p-8 space-y-8 animate-in fade-in duration-1000">
+        <div className="flex flex-col min-h-screen bg-slate-950/60 text-slate-200 p-8 space-y-8 animate-in fade-in duration-700">
             {/* Header / ID Bar */}
-            <div className="flex justify-between items-center border-b border-white/10 pb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/10 pb-6 gap-4">
                 <div className="flex gap-6 items-center">
-                    <div className="w-16 h-16 border-2 border-emerald-500/50 flex items-center justify-center bg-black/40 rotate-45">
-                        <span className="-rotate-45 text-2xl">◈</span>
+                    <div className="w-14 h-14 border-2 border-emerald-500/50 flex items-center justify-center bg-black/40 rotate-45 shrink-0">
+                        <span className="-rotate-45 text-xl">◈</span>
                     </div>
                     <div className="flex flex-col">
-                        <h1 className="text-2xl font-black tracking-[0.5em] text-white uppercase">COMMAND_HUB</h1>
+                        <h1 className="text-2xl font-black tracking-[0.4em] text-white uppercase">COMMAND_HUB</h1>
                         <span className="text-[10px] font-mono text-emerald-500 tracking-[0.2em] uppercase">Status: Authorization_Verified</span>
                     </div>
                 </div>
 
-                <div className="flex gap-12 text-right">
+                <div className="flex gap-8 sm:gap-12 text-right">
                     <div className="flex flex-col">
                         <span className="text-[9px] font-black text-slate-500 tracking-widest uppercase mb-1">Local Time</span>
-                        <span className="text-xl font-mono font-black text-emerald-400">{currentTime}</span>
+                        <span className="text-lg font-mono font-black text-emerald-400">{currentTime}</span>
                     </div>
                     <div className="flex flex-col">
                         <span className="text-[9px] font-black text-slate-500 tracking-widest uppercase mb-1">Neural Rank</span>
-                        <span className="text-xl font-mono font-black text-white">{summary.stats.highestRank || 'INITIATE'}</span>
+                        <span className="text-lg font-mono font-black text-white">{safeStats.highestRank || 'INITIATE'}</span>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 flex-1">
                 {/* Left Column - Core Metrics */}
-                <div className="md:col-span-4 space-y-8">
+                <div className="md:col-span-4 space-y-6">
                     <TacticalPanel title="OPERATIONAL_SYNC">
-                        <div className="space-y-6 pt-2">
-                            <TacticalProgressBar label="Overall Completion" val={summary.completionPercent} color="emerald" />
-                            <TacticalProgressBar label="Adaptability Index" val={summary.cognitiveAverages.adaptability} color="amber" />
-                            <TacticalProgressBar label="Strategic Depth" val={summary.cognitiveAverages.planning} color="blue" />
+                        <div className="space-y-5 pt-2">
+                            <TacticalProgressBar label="Overall Completion" val={summary.completionPercent || 0} color="emerald" />
+                            <TacticalProgressBar label="Adaptability Index" val={safeCog.adaptability || 0} color="amber" />
+                            <TacticalProgressBar label="Strategic Depth" val={safeCog.planning || 0} color="blue" />
                         </div>
                     </TacticalPanel>
 
@@ -83,52 +96,64 @@ export default function CommandDashboard() {
                 </div>
 
                 {/* Right Column - Mission Control & Launch */}
-                <div className="md:col-span-8 flex flex-col gap-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <button
+                <div className="md:col-span-8 flex flex-col gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <NavCard
                             onClick={() => router.push('/game/select')}
-                            className="group relative h-48 bg-emerald-950/20 border border-emerald-500/30 overflow-hidden hover:border-emerald-500 transition-all text-left p-6"
-                        >
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <span className="text-8xl">⚔</span>
-                            </div>
-                            <h3 className="text-xl font-black tracking-widest text-emerald-400 mb-2 uppercase">Solo Campaign</h3>
-                            <p className="text-[10px] text-slate-400 leading-relaxed w-2/3">
-                                Advance through the MindArena sectors. Deploy against advanced AI agents in tactical scenarios.
-                            </p>
-                            <div className="absolute bottom-6 right-6 px-4 py-2 border border-emerald-500/50 group-hover:bg-emerald-500 group-hover:text-black transition-all">
-                                <span className="text-[10px] font-black tracking-widest">LAUNCH_SELECTOR</span>
-                            </div>
-                        </button>
-
-                        <button
+                            icon="⚔"
+                            title="Solo Campaign"
+                            desc="Deploy against advanced AI agents in tactical scenarios."
+                            cta="LAUNCH_SELECTOR"
+                            accentClass="bg-emerald-950/20 border-emerald-500/30 hover:border-emerald-500"
+                            ctaClass="border-emerald-500/50 group-hover:bg-emerald-500"
+                            titleClass="text-emerald-400"
+                        />
+                        <NavCard
+                            onClick={() => router.push('/game/lobby')}
+                            icon="📡"
+                            title="Multiplayer"
+                            desc="Connect with other operatives via tactical network links."
+                            cta="OPEN_NETWORK"
+                            accentClass="bg-blue-950/20 border-blue-500/30 hover:border-blue-500"
+                            ctaClass="border-blue-500/50 group-hover:bg-blue-500"
+                            titleClass="text-blue-400"
+                        />
+                        <NavCard
+                            onClick={() => router.push('/game/select')}
+                            icon="🎯"
+                            title="Mission Select"
+                            desc="Browse tiers & deploy to any unlocked mission zone."
+                            cta="OPEN_MISSIONS"
+                            accentClass="bg-amber-950/20 border-amber-500/30 hover:border-amber-500"
+                            ctaClass="border-amber-500/50 group-hover:bg-amber-500"
+                            titleClass="text-amber-400"
+                        />
+                        <NavCard
                             onClick={() => router.push('/game/stats')}
-                            className="group relative h-48 bg-slate-900/40 border border-white/5 overflow-hidden hover:border-white/20 transition-all text-left p-6"
-                        >
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-slate-400">
-                                <span className="text-8xl">👤</span>
-                            </div>
-                            <h3 className="text-xl font-black tracking-widest text-white mb-2 uppercase">Operative Dossier</h3>
-                            <p className="text-[10px] text-slate-400 leading-relaxed w-2/3">
-                                Review detailed career performance, neural metrics, and unlocked combat abilities.
-                            </p>
-                            <div className="absolute bottom-6 right-6 px-4 py-2 border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
-                                <span className="text-[10px] font-black tracking-widest">ACCESS_FILE</span>
-                            </div>
-                        </button>
+                            icon="👤"
+                            title="Operative Dossier"
+                            desc="Career metrics, neural analysis, and combat certifications."
+                            cta="ACCESS_FILE"
+                            accentClass="bg-slate-900/40 border-white/5 hover:border-white/20"
+                            ctaClass="border-white/20 group-hover:bg-white"
+                            titleClass="text-white"
+                        />
                     </div>
 
                     <TacticalPanel title="RECENT_PERFORMANCE">
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 py-2">
-                            <TacticalStat label="Total Kills" value={summary.stats.totalKills} icon="🎯" />
-                            <TacticalStat label="Tasks Finished" value={summary.stats.totalTasksCompleted} icon="⚙" />
-                            <TacticalStat label="Mission Time" value={`${(summary.stats.totalTimeSeconds / 60).toFixed(1)}m`} icon="⏱" />
-                            <TacticalStat label="Rank Pts" value={summary.stats.totalScore} icon="⭐" />
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-2">
+                            <TacticalStat label="Total Kills" value={safeStats.totalKills || 0} icon="🎯" />
+                            <TacticalStat label="Tasks Finished" value={safeStats.totalTasksCompleted || 0} icon="⚙" />
+                            <TacticalStat label="Mission Time" value={`${((safeStats.totalTimeSeconds || 0) / 60).toFixed(1)}m`} icon="⏱" />
+                            <TacticalStat label="Rank Pts" value={safeStats.totalScore || 0} icon="⭐" />
                         </div>
                     </TacticalPanel>
 
                     <div className="flex gap-4 mt-auto">
-                        <button className="flex-1 py-4 border border-white/5 bg-black/20 text-[10px] font-black tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all uppercase">
+                        <button
+                            onClick={() => router.push('/game/settings')}
+                            className="flex-1 py-4 border border-white/5 bg-black/20 text-[10px] font-black tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all uppercase"
+                        >
                             ⚙ Settings
                         </button>
                         <button className="flex-1 py-4 border border-white/5 bg-black/20 text-[10px] font-black tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all uppercase">
@@ -136,7 +161,7 @@ export default function CommandDashboard() {
                         </button>
                         <button
                             onClick={() => router.push('/game')}
-                            className="px-8 py-4 border border-red-500/30 text-red-500 text-[10px] font-black tracking-widest hover:bg-red-500 hover:text-black transition-all uppercase"
+                            className="px-6 py-4 border border-red-500/30 text-red-500 text-[10px] font-black tracking-widest hover:bg-red-500 hover:text-black transition-all uppercase"
                         >
                             Log Out
                         </button>
@@ -144,5 +169,23 @@ export default function CommandDashboard() {
                 </div>
             </div>
         </div>
+    );
+}
+
+function NavCard({ onClick, icon, title, desc, cta, accentClass, ctaClass, titleClass }) {
+    return (
+        <button
+            onClick={onClick}
+            className={`group relative h-44 ${accentClass} border overflow-hidden transition-all text-left p-5`}
+        >
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                <span className="text-7xl">{icon}</span>
+            </div>
+            <h3 className={`text-lg font-black tracking-widest ${titleClass} mb-2 uppercase`}>{title}</h3>
+            <p className="text-[10px] text-slate-400 leading-relaxed w-3/4">{desc}</p>
+            <div className={`absolute bottom-5 right-5 px-3 py-1.5 border ${ctaClass} group-hover:text-black transition-all`}>
+                <span className="text-[9px] font-black tracking-widest">{cta}</span>
+            </div>
+        </button>
     );
 }

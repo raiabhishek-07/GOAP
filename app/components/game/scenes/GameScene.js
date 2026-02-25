@@ -215,7 +215,7 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
                 if (this.hudScene?.addLog) {
                     this.hudScene.addLog(`TASK CAPTURED: ${task.name}`, '#22c55e');
                 }
-                SoundManager.taskCapture();
+                SoundManager.taskComplete();
                 UIFactory.createPopup(this, this.player.x, this.player.y - 50,
                     `✓ ${task.name} +${task.basePoints}`, '#22c55e', '14px');
                 this.isChanneling = false;
@@ -236,9 +236,6 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
 
         // ─── 16. PLAN PHASE ───
         this.startPlanPhase();
-
-        // Level intro message
-        this.showBanner(`STAGE ${this.levelNum}.${this.stageNum}`, this.levelConfig.name.toUpperCase());
     }
 
     // ═══════════════════════════════════════════════════════
@@ -263,7 +260,27 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
         planBg.fillStyle(0x000000, 0.5);
         planBg.fillRect(-WORLD_W, -WORLD_H, WORLD_W * 2, WORLD_H * 2);
 
-        this.planTitle = this.add.text(0, -50, 'PLAN YOUR APPROACH', {
+        // Stage label at top
+        const stageLabel = this.add.text(0, -100, `STAGE ${this.levelNum}.${this.stageNum}`, {
+            fontSize: '16px',
+            fontFamily: '"Courier New", monospace',
+            color: '#22c55e',
+            fontStyle: 'bold',
+            letterSpacing: 6,
+            stroke: '#000000',
+            strokeThickness: 3,
+        }).setOrigin(0.5);
+
+        const stageName = this.add.text(0, -78, this.levelConfig.name.toUpperCase(), {
+            fontSize: '11px',
+            fontFamily: '"Courier New", monospace',
+            color: '#94a3b8',
+            letterSpacing: 3,
+            stroke: '#000000',
+            strokeThickness: 2,
+        }).setOrigin(0.5);
+
+        this.planTitle = this.add.text(0, -40, 'PLAN YOUR APPROACH', {
             fontSize: '32px',
             fontFamily: '"Courier New", monospace',
             color: '#f59e0b',
@@ -273,7 +290,7 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
             strokeThickness: 4,
         }).setOrigin(0.5);
 
-        this.planTimer = this.add.text(0, 10, '5', {
+        this.planTimer = this.add.text(0, 20, '5', {
             fontSize: '64px',
             fontFamily: '"Courier New", monospace',
             color: '#ffffff',
@@ -282,7 +299,7 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
             strokeThickness: 5,
         }).setOrigin(0.5);
 
-        this.planSubtext = this.add.text(0, 60, 'Study the map • Identify targets • Form a strategy', {
+        this.planSubtext = this.add.text(0, 70, 'Study the map • Identify targets • Form a strategy', {
             fontSize: '14px',
             fontFamily: '"Courier New", monospace',
             color: '#94a3b8',
@@ -290,7 +307,7 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
             strokeThickness: 2,
         }).setOrigin(0.5);
 
-        this.planOverlay.add([planBg, this.planTitle, this.planTimer, this.planSubtext]);
+        this.planOverlay.add([planBg, stageLabel, stageName, this.planTitle, this.planTimer, this.planSubtext]);
     }
 
     endPlanPhase() {
@@ -315,7 +332,7 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
             this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
         });
 
-        this.showBanner('⚔ BATTLE PHASE', 'COMPLETE ALL OBJECTIVES');
+        this.showBanner('⚔ BATTLE PHASE', `STAGE ${this.levelNum}.${this.stageNum} — COMPLETE ALL OBJECTIVES`);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -1120,7 +1137,9 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
                 hudData.channelingTaskName = task?.name || '';
             }
 
-            this.hudScene.updateHUD(hudData);
+            if (this.hudScene?.updateHUD && this.hudScene.sys?.isActive) {
+                this.hudScene.updateHUD(hudData);
+            }
         }
 
         // Legacy registry (for any other consumers)

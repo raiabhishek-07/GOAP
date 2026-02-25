@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MIND_ARENA_LEVELS, isStageUnlocked, isLevelUnlocked } from "../../../lib/game/LevelConfig";
-import { SaveSystem } from "../../../lib/game/SaveSystem";
-import { TacticalPanel, TacticalStat, TacticalProgressBar } from "../../../components/game/TacticalUI";
+import { MIND_ARENA_LEVELS, isStageUnlocked, isLevelUnlocked } from "../../lib/game/LevelConfig";
+import { SaveSystem } from "../../lib/game/SaveSystem";
+import { TacticalPanel, TacticalStat, TacticalProgressBar } from "../../components/game/TacticalUI";
 
 export default function MissionSelectDashboard() {
     const router = useRouter();
@@ -12,17 +12,40 @@ export default function MissionSelectDashboard() {
     const [summary, setSummary] = useState(null);
 
     useEffect(() => {
-        const p = SaveSystem.getProgress();
-        setProgress(p);
-        setSummary(SaveSystem.getProgressionSummary());
+        try {
+            const p = SaveSystem.getProgress();
+            setProgress(p);
+            setSummary(SaveSystem.getProgressionSummary());
+        } catch (e) {
+            setProgress({});
+            setSummary(null);
+        }
     }, []);
 
     const level = MIND_ARENA_LEVELS[activeLevel];
 
+    // Gather all unlocked stages for quick deploy
+    const allUnlocked = [];
+    for (const [lk, lv] of Object.entries(MIND_ARENA_LEVELS)) {
+        const ln = parseInt(lk);
+        for (const [sk] of Object.entries(lv.stages)) {
+            const sn = parseInt(sk);
+            if (isStageUnlocked(ln, sn, progress)) {
+                allUnlocked.push({ ln, sn });
+            }
+        }
+    }
+
+    const launchRandom = () => {
+        if (allUnlocked.length === 0) return;
+        const pick = allUnlocked[Math.floor(Math.random() * allUnlocked.length)];
+        router.push(`/game/briefing/${pick.ln}/${pick.sn}`);
+    };
+
     return (
         <div className="flex flex-col min-h-screen bg-slate-950/40 text-slate-200 p-8 pt-12">
             {/* Top Stat Bar */}
-            <div className="flex justify-between items-center mb-12 border-b border-white/5 pb-6 animate-in fade-in slide-in-from-top duration-700">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 border-b border-white/5 pb-6 gap-4 animate-in fade-in slide-in-from-top duration-700">
                 <div className="flex flex-col">
                     <h1 className="text-3xl font-black tracking-[0.4em] text-white uppercase">
                         Mission_Control
@@ -38,21 +61,36 @@ export default function MissionSelectDashboard() {
                     </div>
                 </div>
 
-                {summary && (
-                    <div className="flex gap-8">
-                        <div className="w-48">
-                            <TacticalProgressBar
-                                label="Overall Completion"
-                                val={summary.completionPercent}
-                                color="emerald"
-                            />
+                <div className="flex gap-6 items-center">
+                    {/* Quick Deploy Button */}
+                    <button
+                        onClick={launchRandom}
+                        className="group flex items-center gap-3 px-6 py-3 border border-amber-500/30 bg-amber-500/5 hover:border-amber-500 hover:bg-amber-500/10 transition-all active:scale-95"
+                        title="Randomly deploy to any unlocked mission"
+                    >
+                        <span className="text-xl group-hover:animate-bounce">🎲</span>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black tracking-widest text-amber-400 uppercase">Quick Deploy</span>
+                            <span className="text-[8px] text-slate-500 tracking-wider uppercase">{allUnlocked.length} available</span>
                         </div>
-                        <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Career Score</span>
-                            <span className="text-xl font-mono font-black text-white">{summary.stats.averageScore || 0}</span>
+                    </button>
+
+                    {summary && (
+                        <div className="hidden sm:flex gap-8">
+                            <div className="w-48">
+                                <TacticalProgressBar
+                                    label="Overall Completion"
+                                    val={summary.completionPercent || 0}
+                                    color="emerald"
+                                />
+                            </div>
+                            <div className="flex flex-col items-end">
+                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Career Score</span>
+                                <span className="text-xl font-mono font-black text-white">{summary.stats?.averageScore || 0}</span>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1">
@@ -94,7 +132,7 @@ export default function MissionSelectDashboard() {
                     </div>
 
                     <button
-                        onClick={() => router.push('/game')}
+                        onClick={() => router.push('/game/dashboard')}
                         className="w-full mt-auto py-3 text-[10px] font-black tracking-[0.3em] text-slate-600 hover:text-white border border-transparent hover:bg-white/5 transition-all uppercase"
                     >
                         ← Back to Command
@@ -112,10 +150,12 @@ export default function MissionSelectDashboard() {
                                 Selected_Zones
                             </h3>
                         </div>
-                        <span className="text-[10px] font-mono text-slate-500">FOUND_03_REGIONS</span>
+                        <span className="text-[10px] font-mono text-slate-500">
+                            {Object.keys(level.stages).length} REGIONS
+                        </span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom duration-1000 delay-450">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom duration-1000">
                         {Object.entries(level.stages).map(([sNum, stage], idx) => {
                             const stageNum = parseInt(sNum);
                             const unlocked = isStageUnlocked(activeLevel, stageNum, progress);
@@ -139,17 +179,22 @@ export default function MissionSelectDashboard() {
                     <div className="mt-12 h-32 w-full relative overflow-hidden border border-white/5 bg-black/40 rounded-sm opacity-50">
                         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-emerald-500/20" />
                         <div className="flex justify-around items-end h-full p-4 pb-2">
-                            {Array.from({ length: 48 }).map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="w-1 bg-emerald-500/20 animate-pulse"
-                                    style={{
-                                        height: `${10 + Math.random() * 80}%`,
-                                        animationDelay: `${i * 0.1}s`,
-                                        opacity: Math.random() > 0.5 ? 0.3 : 0.1
-                                    }}
-                                />
-                            ))}
+                            {Array.from({ length: 48 }).map((_, i) => {
+                                const seed = ((i * 1327 + 7) % 97) / 97;
+                                const h = 10 + seed * 80;
+                                const op = ((i * 31) % 7) > 3 ? 0.3 : 0.1;
+                                return (
+                                    <div
+                                        key={i}
+                                        className="w-1 bg-emerald-500/20 animate-pulse"
+                                        style={{
+                                            height: `${h.toFixed(1)}%`,
+                                            animationDelay: `${i * 0.1}s`,
+                                            opacity: op
+                                        }}
+                                    />
+                                );
+                            })}
                         </div>
                         <span className="absolute bottom-2 left-4 text-[7px] font-mono text-emerald-500/40 uppercase tracking-widest">Neural_Waveform_Active</span>
                     </div>
@@ -184,7 +229,7 @@ function StageDashboardCard({ levelNum, stageNum, stage, unlocked, progress, onC
             </div>
 
             <p className="text-[10px] text-slate-500 italic mb-6 leading-relaxed line-clamp-2 min-h-[30px]">
-                "{stage.subtitle}"
+                &quot;{stage.subtitle}&quot;
             </p>
 
             <div className="grid grid-cols-2 gap-4 mb-6">

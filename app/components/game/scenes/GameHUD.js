@@ -138,6 +138,17 @@ export class GameHUD extends (Phaser ? Phaser.Scene : Object) {
 
         this.add.text(x + 60, y + 32, '📋', iconStyle);
         this.taskCountText = this.add.text(x + 75, y + 32, '0/0', { fontSize: '10px', fontFamily: 'monospace', color: '#ffffff' });
+
+        // Timer warning — large centered number shown during final seconds
+        const { width: screenW, height: screenH } = this.scale;
+        this.timerWarning = this.add.text(screenW / 2, screenH / 2, '', {
+            fontSize: '72px',
+            fontFamily: '"Courier New", monospace',
+            color: '#ef4444',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 6,
+        }).setOrigin(0.5).setAlpha(0).setDepth(200);
     }
 
     // ─── TASK TRACKER ───────────────────────────────────
@@ -272,7 +283,7 @@ export class GameHUD extends (Phaser ? Phaser.Scene : Object) {
     // ─── UPDATE (called from GameScene) ─────────────────
 
     updateHUD(data) {
-        if (!data) return;
+        if (!data || !this.scene?.isActive() || !this.sys?.isActive) return;
 
         // Timer
         if (this.timerText && data.time) {
@@ -431,6 +442,7 @@ export class GameHUD extends (Phaser ? Phaser.Scene : Object) {
     // ─── TIMER WARNING ──────────────────────────────────
 
     showTimerWarning(seconds) {
+        if (!this.timerWarning) return;
         this.timerWarning.setText(seconds);
         this.timerWarning.setAlpha(1);
         this.tweens.add({
