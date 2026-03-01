@@ -553,64 +553,84 @@ export class PixelTextureGenerator {
     /** Modular player parts: body (torso only), legs, arms — for procedural limb animation */
     _genPlayerModularParts() {
         const _ = '.';
-        const G1 = '#d4a020';
-        const G2 = '#b8860b';
-        const G3 = '#8b6914';
-        const RC = '#c62828';
-        const RD = '#991b1b';
-        const SK = '#deb887';
-        const SD = '#c4956a';
-        const EY = '#1a1a2e';
-        const A1 = '#8b8b8b';
-        const A2 = '#6b6b6b';
-        const A3 = '#4a4a4a';
-        const CP = '#7c2d12';
-        const CD = '#5c1f0d';
-        const BL = '#2a2a2a';
-        const BD = '#1a1a1a';
-        const GR = '#22c55e';
+        // Human Warrior Colors - brown leather armor, red loincloth, dark hair
+        const BR1 = '#8b4513'; // brown leather primary
+        const BR2 = '#654321'; // brown leather secondary
+        const BR3 = '#4a2c17'; // brown leather dark
+        const RC = '#dc2626'; // red loincloth primary
+        const RD = '#991b1b'; // red loincloth dark
+        const SK = '#f4a460'; // sandy beige skin
+        const SD = '#d2691e'; // darker skin shading
+        const EY = '#2c1810'; // dark brown eyes
+        const HR = '#2c1810'; // dark brown hair/top knot
+        const HD = '#1a0e08'; // darker hair shading
+        const A1 = '#8b4513'; // arm guards brown primary
+        const A2 = '#654321'; // arm guards brown secondary
+        const A3 = '#4a2c17'; // arm guards brown dark
+        const CP = '#654321'; // brown leather pouch
+        const CD = '#4a2c17'; // dark brown pouch
+        const BL = '#1a1a1a'; // black boots
+        const BD = '#0d0d0d'; // black boots dark
+        const GR = '#2c1810'; // dark brown eyes/hair
 
-        // Body only (head + torso, no legs) — 24×14
-        const { canvas: bodyCanvas, ctx: bodyCtx } = this._createTex('player_body', 24, 14);
+        // Body only (head + torso, no legs) — 24×16 - Improved Human Warrior design
+        const { canvas: bodyCanvas, ctx: bodyCtx } = this._createTex('player_body', 24, 16);
         this._drawPixelMap(bodyCtx, [
-            [_, _, _, _, _, _, _, _, RC, RC, RC, RC, RC, RC, RC, _, _, _, _, _, _, _, _, _],
-            [_, _, _, _, _, _, _, RC, RD, RC, RC, RC, RD, RC, RD, _, _, _, _, _, _, _, _, _],
-            [_, _, _, _, _, _, G3, G1, G1, G2, G2, G2, G1, G1, G3, _, _, _, _, _, _, _, _, _],
-            [_, _, _, _, _, G3, G2, G1, G1, G1, G1, G1, G1, G1, G2, G3, _, _, _, _, _, _, _, _],
-            [_, _, _, _, _, G3, G2, SK, EY, SK, SK, SK, EY, SK, G2, G3, _, _, _, _, _, _, _, _],
-            [_, _, _, _, _, _, G3, SK, SD, SK, SK, SK, SD, SK, G3, _, _, _, _, _, _, _, _, _],
-            [_, _, _, _, _, _, _, A2, A1, A1, A1, A1, A1, A2, _, _, _, _, _, _, _, _, _, _],
-            [_, _, _, _, A3, A2, A1, A1, A1, A2, A2, A1, A1, A1, A2, A3, _, _, _, _, _, _, _, _],
-            [_, _, _, CP, A3, A2, A1, A1, G2, A1, A1, G2, A1, A1, A2, A3, CP, _, _, _, _, _, _, _],
-            [_, _, _, CP, A3, A1, A1, A2, A1, A1, A1, A1, A2, A1, A1, A3, CP, _, _, _, _, _, _, _],
-            [_, _, _, CP, A3, A1, A1, A1, A1, A2, A2, A1, A1, A1, A1, A3, CP, _, _, _, _, _, _, _],
-            [_, _, _, CD, A3, A1, A1, A1, A1, A2, A2, A1, A1, A1, A1, A3, CD, _, _, _, _, _, _, _],
-            [_, _, _, CD, _, A3, BL, BL, G2, BL, BL, G2, BL, BL, A3, _, CD, _, _, _, _, _, _, _],
-            [_, _, _, _, _, _, BL, BL, BL, BL, BL, BL, BL, BL, _, _, _, _, _, _, _, _, _, _],
+            // Top knot hair - more refined
+            [_, _, _, _, _, _, _, HR, HR, HR, HR, HR, HR, _, _, _, _, _, _, _, _, _, _, _],
+            [_, _, _, _, _, _, HR, HD, HR, HD, HR, HD, HR, HD, _, _, _, _, _, _, _, _, _],
+            // Head with better facial features
+            [_, _, _, _, _, _, HR, SK, EY, SK, SK, EY, SK, HR, _, _, _, _, _, _, _, _, _],
+            [_, _, _, _, _, _, HR, SK, SD, SK, SK, SD, SK, HR, _, _, _, _, _, _, _, _, _],
+            [_, _, _, _, _, _, _, SK, SD, SK, SK, SD, SK, _, _, _, _, _, _, _, _, _, _],
+            // Beard - more natural shape
+            [_, _, _, _, _, _, _, HR, HR, HR, HR, HR, HR, _, _, _, _, _, _, _, _, _, _],
+            [_, _, _, _, _, _, _, HD, HR, HD, HR, HD, HR, _, _, _, _, _, _, _, _, _, _],
+            // Neck and shoulders
+            [_, _, _, _, _, _, _, SK, SK, SK, SK, SK, SK, _, _, _, _, _, _, _, _, _, _],
+            // Torso with better armor design
+            [_, _, _, _, A3, A2, A1, A1, A1, A2, A2, A1, A1, A1, A2, A3, _, _, _, _, _, _],
+            [_, _, _, CP, A3, A2, A1, A1, BR2, A1, A1, BR2, A1, A1, A2, A3, CP, _, _, _, _, _, _],
+            [_, _, _, CP, A3, A1, A1, A2, A1, A1, A1, A2, A1, A1, A1, A3, CP, _, _, _, _, _, _],
+            [_, _, _, CP, A3, A1, A1, A1, A1, A2, A2, A1, A1, A1, A1, A3, CP, _, _, _, _, _, _],
+            [_, _, _, CD, A3, A1, A1, A1, A1, A2, A2, A1, A1, A1, A1, A3, CD, _, _, _, _, _, _],
+            // Red loincloth - better shape
+            [_, _, _, CD, _, A3, RC, RC, RC, RC, RC, RC, RC, RC, A3, _, CD, _, _, _, _, _, _],
+            [_, _, _, _, _, _, RC, RD, RC, RD, RC, RD, RC, RD, _, _, _, _, _, _, _, _, _],
+            [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
         ], 0, 0);
-        this._px(bodyCtx, 10, 0, GR);
-        this._px(bodyCtx, 11, 0, GR);
+        this._px(bodyCtx, 10, 3, GR);
+        this._px(bodyCtx, 11, 3, GR);
         this._finish(bodyCanvas);
 
-        // Single leg (boot + shin) — 12×18, origin at top center; armor colors to match body
-        const { canvas: legCanvas, ctx: legCtx } = this._createTex('player_leg', 12, 18);
-        const BD2 = '#1a1a1a';
-        const BL2 = '#2a2a2a';
-        this._rect(legCtx, 4, 0, 4, 12, A1);   // upper leg (lighter so visible)
-        this._rect(legCtx, 3, 1, 1, 10, A2, 0.7);
-        this._rect(legCtx, 4, 12, 4, 4, A2);   // lower leg / shin
-        this._rect(legCtx, 3, 13, 1, 3, A3, 0.6);
-        this._rect(legCtx, 2, 14, 8, 4, BL2);  // boot
-        this._rect(legCtx, 2, 16, 8, 2, BD2);  // sole
+        // Single leg (boot + shin) — 12×20, origin at top center; refined design
+        const { canvas: legCanvas, ctx: legCtx } = this._createTex('player_leg', 12, 20);
+        const BD2 = '#0d0d0d';
+        const BL2 = '#1a1a1a';
+        // More detailed leg with better proportions
+        this._rect(legCtx, 5, 0, 2, 6, A1);     // upper leg armor (thinner)
+        this._rect(legCtx, 4, 1, 1, 4, A2, 0.7);  // armor shading
+        this._rect(legCtx, 5, 6, 2, 6, A2);     // lower leg / shin armor
+        this._rect(legCtx, 4, 7, 1, 4, A3, 0.6); // shin shading
+        this._rect(legCtx, 3, 12, 6, 4, BL2);   // black boot (wider)
+        this._rect(legCtx, 3, 16, 6, 2, BD2);   // boot sole
+        // Add boot details
+        this._px(legCtx, 4, 14, A1); // boot buckle
+        this._px(legCtx, 7, 14, A1);
         this._finish(legCanvas);
 
-        // Single arm (sleeve + hand) — 10×16, origin at shoulder; clear silhouette
-        const { canvas: armCanvas, ctx: armCtx } = this._createTex('player_arm', 10, 16);
-        const SK2 = '#deb887';
-        this._rect(armCtx, 3, 0, 4, 12, A1);    // sleeve
-        this._rect(armCtx, 2, 1, 1, 10, A2, 0.7);
-        this._rect(armCtx, 3, 12, 4, 4, SK2);  // hand
-        this._rect(armCtx, 2, 13, 2, 2, SD, 0.5);
+        // Single arm (sleeve + hand) — 10×18, origin at shoulder; refined design
+        const { canvas: armCanvas, ctx: armCtx } = this._createTex('player_arm', 10, 18);
+        const SK2 = '#f4a460';
+        // More detailed arm with better proportions
+        this._rect(armCtx, 4, 0, 2, 8, A1);     // arm guard (thinner)
+        this._rect(armCtx, 3, 1, 1, 6, A2, 0.7);  // arm guard shading
+        this._rect(armCtx, 4, 8, 2, 5, SK2);    // hand (smaller)
+        this._rect(armCtx, 3, 9, 1, 3, SD, 0.5); // hand shading
+        // Add hand details
+        this._px(armCtx, 4, 12, SK2); // fingers
+        this._px(armCtx, 5, 12, SK2);
+        this._px(armCtx, 6, 12, SK2);
         this._finish(armCanvas);
     }
 

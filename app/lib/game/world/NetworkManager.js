@@ -53,6 +53,11 @@ export class NetworkManager {
         this.playerId = this._generateId();
 
         try {
+            // Check if WebSocket is supported
+            if (typeof WebSocket === 'undefined') {
+                throw new Error('WebSocket not supported in this environment');
+            }
+
             this.ws = new WebSocket(url);
 
             this.ws.onopen = () => {
@@ -90,11 +95,38 @@ export class NetworkManager {
             };
 
             this.ws.onerror = (error) => {
-                console.error('[NET] Error:', error);
+                // Enhanced error handling - don't log empty errors
+                if (error && error.message) {
+                    console.error('[NET] WebSocket Error:', error.message);
+                } else {
+                    console.warn('[NET] WebSocket connection failed - server may be unavailable');
+                }
+                
+                // Set connection state to false
+                this.connected = false;
+                
+                // Don't try to reconnect if it's a connection refusal
+                if (this.ws && this.ws.readyState === WebSocket.CLOSED) {
+                    this._maxReconnects = 0; // prevent reconnect attempts
+                }
+                
                 if (this.onError) this.onError(error);
             };
+
+            // Add connection timeout
+            setTimeout(() => {
+                if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+                    console.warn('[NET] Connection timeout - server may be down');
+                    this.ws.close();
+                    this.connected = false;
+                    this._maxReconnects = 0; // prevent reconnect
+                }
+            }, 5000); // 5 second timeout
+
         } catch (e) {
-            console.error('[NET] Connection failed:', e);
+            console.error('[NET] Connection failed:', e.message);
+            this.connected = false;
+            this._maxReconnects = 0; // prevent reconnect on error
             if (this.onError) this.onError(e);
         }
     }
@@ -110,12 +142,15 @@ export class NetworkManager {
     }
 
     _tryReconnect() {
-        if (this._reconnectAttempts >= this._maxReconnects) return;
+        if (this._reconnectAttempts >= this._maxReconnects || this._maxReconnects === 0) return;
         this._reconnectAttempts++;
 
         console.log(`[NET] Reconnecting (${this._reconnectAttempts}/${this._maxReconnects})...`);
         setTimeout(() => {
-            this.connect(this._serverUrl, this.playerName);
+            // Only reconnect if we haven't hit the max attempts limit
+            if (this._reconnectAttempts <= this._maxReconnects) {
+                this.connect(this._serverUrl, this.playerName);
+            }
         }, this._reconnectDelay * this._reconnectAttempts);
     }
 

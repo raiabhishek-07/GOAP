@@ -49,8 +49,18 @@ export default function MultiplayerLobby({ onStartGame, onBack }) {
             setError('Disconnected from server');
         };
 
-        net.onError = () => {
-            setError('Failed to connect. Is the server running?');
+        net.onError = (error) => {
+            setConnected(false);
+            // More user-friendly error messages
+            if (error?.message?.includes('WebSocket not supported')) {
+                setError('WebSocket not supported in this browser');
+            } else if (error?.message?.includes('ECONNREFUSED') || error?.message?.includes('Connection refused')) {
+                setError('Server is not running or connection refused');
+            } else if (error?.message?.includes('timeout')) {
+                setError('Connection timeout - server may be busy');
+            } else {
+                setError('Unable to connect to server. Check if server is running.');
+            }
         };
 
         net.onRoomJoined = (msg) => {
@@ -69,12 +79,18 @@ export default function MultiplayerLobby({ onStartGame, onBack }) {
             setPlayers(prev => prev.filter(p => p.id !== msg.playerId));
         };
 
-        net.connect(serverUrl, playerName);
+        try {
+            net.connect(serverUrl, playerName);
+        } catch (error) {
+            console.error('Connection error:', error);
+            setError('Failed to initialize connection');
+        }
     };
 
     const handleCreateRoom = () => {
         if (!connected) {
-            handleConnect();
+            // For demo/offline mode, don't try to connect
+            setError('');
         }
         // In offline/demo mode, simulate room creation
         const fakeRoomId = 'ROOM-' + Math.random().toString(36).substr(2, 5).toUpperCase();
@@ -235,8 +251,8 @@ export default function MultiplayerLobby({ onStartGame, onBack }) {
 
                 {/* Info footer */}
                 <div className={styles.footer}>
-                    <p>Multiplayer requires a game server. Run locally or deploy.</p>
-                    <p>Supports up to 10 players per room.</p>
+                    <p>🔧 Multiplayer requires a WebSocket server to be running.</p>
+                    <p>For demo purposes, you can create rooms in offline mode.</p>
                 </div>
             </div>
         </div>

@@ -896,27 +896,64 @@ export class OpenWorldHUD extends (Phaser ? Phaser.Scene : Object) {
         const x = W - 20;
         const y = 12;
 
-        // BG
+        // Enhanced BG with gradient effect
         const bg = this.add.graphics();
-        bg.fillStyle(this.PANEL_BG, 0.6);
-        bg.fillRoundedRect(x - 90, y - 4, 90, 24, 4);
-        bg.lineStyle(1, this.PANEL_BORDER, 0.15);
-        bg.strokeRoundedRect(x - 90, y - 4, 90, 24, 4);
+        // Main panel background
+        bg.fillStyle(0x0f172a, 0.85);
+        bg.fillRoundedRect(x - 110, y - 6, 110, 32, 6);
+        // Border glow effect
+        bg.lineStyle(2, 0x3b82f6, 0.6);
+        bg.strokeRoundedRect(x - 110, y - 6, 110, 32, 6);
+        // Inner border
+        bg.lineStyle(1, 0x60a5fa, 0.3);
+        bg.strokeRoundedRect(x - 108, y - 4, 106, 28, 5);
 
-        // Skull icon
-        this.add.text(x - 82, y, '💀', { fontSize: '12px' });
+        // Enhanced skull icon with glow
+        const skullIcon = this.add.text(x - 100, y + 2, '💀', { 
+            fontSize: '16px', 
+            fontStyle: 'bold'
+        });
+        // Add glow effect to skull
+        skullIcon.setShadow(0, 0, '#ef4444', 8);
+        skullIcon.setTint(0xff6b6b);
 
-        // Kill count
-        this.killText = this.add.text(x - 64, y + 2, '0', {
-            fontSize: '14px', fontFamily: 'monospace', fontStyle: 'bold',
+        // Enhanced kill count with better styling
+        this.killText = this.add.text(x - 75, y + 3, '0', {
+            fontSize: '18px', 
+            fontFamily: 'monospace', 
+            fontStyle: 'bold',
             color: '#fbbf24',
+            shadow: {
+                offsetX: 0,
+                offsetY: 0,
+                color: '#f59e0b',
+                blur: 6,
+                stroke: true,
+                fill: true
+            }
         });
 
-        // Ping
-        this.pingText = this.add.text(x - 8, y + 4, '', {
-            fontSize: '8px', fontFamily: 'monospace',
-            color: '#334155',
+        // Add KILLS label
+        this.add.text(x - 75, y + 18, 'KILLS', {
+            fontSize: '8px', 
+            fontFamily: 'monospace', 
+            fontStyle: 'bold',
+            color: '#94a3b8',
+            letterSpacing: 2
+        });
+
+        // Enhanced ping display
+        this.pingText = this.add.text(x - 8, y + 8, '', {
+            fontSize: '9px', 
+            fontFamily: 'monospace',
+            color: '#10b981',
+            fontStyle: 'bold'
         }).setOrigin(1, 0);
+
+        // Add connection indicator
+        this.connectionIndicator = this.add.graphics();
+        this.connectionIndicator.fillStyle(0x10b981, 0.8);
+        this.connectionIndicator.fillCircle(x - 15, y + 8, 3);
 
         this._lastKillCount = 0;
     }
@@ -926,14 +963,66 @@ export class OpenWorldHUD extends (Phaser ? Phaser.Scene : Object) {
         const kills = mainScene?.killCount || 0;
         this.killText.setText(`${kills}`);
 
-        // Flash on new kill
+        // Enhanced flash on new kill with particle effect
         if (kills > this._lastKillCount) {
             this._lastKillCount = kills;
-            this.killText.setScale(1.5);
+            
+            // Scale animation
+            this.killText.setScale(1.8);
             this.tweens.add({
                 targets: this.killText,
-                scaleX: 1, scaleY: 1,
-                duration: 300, ease: 'Back.easeOut',
+                scaleX: 1, 
+                scaleY: 1,
+                duration: 400, 
+                ease: 'Back.easeOut',
+            });
+
+            // Color flash
+            this.killText.setColor('#ffffff');
+            this.time.delayedCall(200, () => {
+                this.killText.setColor('#fbbf24');
+            });
+
+            // Create burst particles
+            this._createKillBurst(this.killText.x, this.killText.y);
+        }
+
+        // Update connection indicator based on ping
+        if (this.pingText.text) {
+            const ping = parseInt(this.pingText.text);
+            if (ping < 50) {
+                this.connectionIndicator.fillStyle(0x10b981, 0.8); // Green
+            } else if (ping < 100) {
+                this.connectionIndicator.fillStyle(0xf59e0b, 0.8); // Yellow
+            } else {
+                this.connectionIndicator.fillStyle(0xef4444, 0.8); // Red
+            }
+            this.connectionIndicator.clear();
+            this.connectionIndicator.fillCircle(this.pingText.x - 10, this.pingText.y + 2, 3);
+        }
+    }
+
+    _createKillBurst(x, y) {
+        // Create particle burst effect for kills
+        for (let i = 0; i < 8; i++) {
+            const particle = this.add.graphics();
+            const angle = (Math.PI * 2 * i) / 8;
+            const distance = 20 + Math.random() * 10;
+            
+            particle.fillStyle(0xfbbf24, 1);
+            particle.fillCircle(0, 0, 2);
+            particle.setPosition(x, y);
+            
+            this.tweens.add({
+                targets: particle,
+                x: x + Math.cos(angle) * distance,
+                y: y + Math.sin(angle) * distance,
+                alpha: 0,
+                scaleX: 0.5,
+                scaleY: 0.5,
+                duration: 600,
+                ease: 'Power2.easeOut',
+                onComplete: () => particle.destroy()
             });
         }
     }

@@ -109,51 +109,65 @@ export default function OpenWorldPage() {
                 style={{ pointerEvents: 'auto' }}
             />
 
-            {/* React UI Overlay — Minimal, top-right corner only */}
+            {/* React UI Overlay — Enhanced top-right corner */}
             <div className="absolute inset-0 z-10 pointer-events-none">
-                <div className="absolute top-3 right-3 flex flex-col gap-2 pointer-events-auto">
-                    {/* Multiplayer */}
+                <div className="absolute top-4 right-4 flex flex-col gap-3 pointer-events-auto">
+                    {/* Multiplayer Button */}
                     <button
                         onClick={() => setShowLobby(true)}
-                        className="px-3 py-1.5 rounded-full text-[8px] font-bold tracking-[0.15em] uppercase transition-all duration-200"
+                        className="group relative px-4 py-2.5 rounded-lg text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-300 transform hover:scale-105"
                         style={{
-                            background: 'rgba(30, 58, 138, 0.5)',
-                            border: '1px solid rgba(59, 130, 246, 0.25)',
-                            color: 'rgba(96, 165, 250, 0.8)',
-                            backdropFilter: 'blur(8px)',
+                            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.8), rgba(59, 130, 246, 0.6))',
+                            border: '2px solid rgba(96, 165, 250, 0.4)',
+                            color: '#ffffff',
+                            backdropFilter: 'blur(12px)',
+                            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
                         }}
                         onMouseEnter={e => {
-                            e.target.style.background = 'rgba(37, 99, 235, 0.6)';
-                            e.target.style.color = '#fff';
+                            e.target.style.background = 'linear-gradient(135deg, rgba(29, 78, 216, 0.9), rgba(37, 99, 235, 0.7))';
+                            e.target.style.borderColor = 'rgba(147, 197, 253, 0.6)';
+                            e.target.style.boxShadow = '0 6px 25px rgba(59, 130, 246, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                         }}
                         onMouseLeave={e => {
-                            e.target.style.background = 'rgba(30, 58, 138, 0.5)';
-                            e.target.style.color = 'rgba(96, 165, 250, 0.8)';
+                            e.target.style.background = 'linear-gradient(135deg, rgba(37, 99, 235, 0.8), rgba(59, 130, 246, 0.6))';
+                            e.target.style.borderColor = 'rgba(96, 165, 250, 0.4)';
+                            e.target.style.boxShadow = '0 4px 20px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
                         }}
                     >
-                        ⚔ MULTI
+                        <span className="flex items-center gap-2">
+                            <span className="text-lg">⚔</span>
+                            <span>MULTI</span>
+                        </span>
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </button>
 
-                    {/* Exit */}
+                    {/* Exit Button */}
                     <button
                         onClick={() => router.push('/game/dashboard')}
-                        className="px-3 py-1.5 rounded-full text-[8px] font-bold tracking-[0.15em] uppercase transition-all duration-200"
+                        className="group relative px-4 py-2.5 rounded-lg text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-300 transform hover:scale-105"
                         style={{
-                            background: 'rgba(127, 29, 29, 0.4)',
-                            border: '1px solid rgba(239, 68, 68, 0.2)',
-                            color: 'rgba(252, 165, 165, 0.6)',
-                            backdropFilter: 'blur(8px)',
+                            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(239, 68, 68, 0.6))',
+                            border: '2px solid rgba(248, 113, 113, 0.4)',
+                            color: '#ffffff',
+                            backdropFilter: 'blur(12px)',
+                            boxShadow: '0 4px 20px rgba(239, 68, 68, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
                         }}
                         onMouseEnter={e => {
-                            e.target.style.background = 'rgba(185, 28, 28, 0.6)';
-                            e.target.style.color = '#fff';
+                            e.target.style.background = 'linear-gradient(135deg, rgba(185, 28, 28, 0.9), rgba(220, 38, 38, 0.7))';
+                            e.target.style.borderColor = 'rgba(252, 165, 165, 0.6)';
+                            e.target.style.boxShadow = '0 6px 25px rgba(239, 68, 68, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                         }}
                         onMouseLeave={e => {
-                            e.target.style.background = 'rgba(127, 29, 29, 0.4)';
-                            e.target.style.color = 'rgba(252, 165, 165, 0.6)';
+                            e.target.style.background = 'linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(239, 68, 68, 0.6))';
+                            e.target.style.borderColor = 'rgba(248, 113, 113, 0.4)';
+                            e.target.style.boxShadow = '0 4px 20px rgba(239, 68, 68, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
                         }}
                     >
-                        ✕ EXIT
+                        <span className="flex items-center gap-2">
+                            <span className="text-lg">✕</span>
+                            <span>EXIT</span>
+                        </span>
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </button>
                 </div>
             </div>
