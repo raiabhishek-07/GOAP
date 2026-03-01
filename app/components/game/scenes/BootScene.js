@@ -26,7 +26,19 @@ export class BootScene extends (Phaser ? Phaser.Scene : Object) {
         g.generateTexture('logo_icon', 64, 64);
         g.destroy();
 
-        this.scene.start('PreloadScene');
+        // Check if this is a direct gameplay launch — skip menus entirely
+        const launch = typeof window !== 'undefined' && window.__MINDARENA_LAUNCH__;
+        console.log('[BootScene] __MINDARENA_LAUNCH__:', launch);
+        if (launch && launch.directLaunch) {
+            console.log('[BootScene] DIRECT LAUNCH → DeploymentLoadingScene', launch.level, launch.stage);
+            this.scene.start('DeploymentLoadingScene', {
+                level: launch.level || 1,
+                stage: launch.stage || 1
+            });
+        } else {
+            console.log('[BootScene] Normal flow → PreloadScene');
+            this.scene.start('PreloadScene');
+        }
     }
 
     createTexture(key, w, h, color) {

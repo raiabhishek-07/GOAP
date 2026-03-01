@@ -124,6 +124,7 @@ export class PauseScene extends (Phaser ? Phaser.Scene : Object) {
         this.scene.stop();
         this.scene.stop('GameScene');
         this.scene.stop('GameHUD');
-        this.scene.start('MainMenuScene');
+        // Navigate via React Router — MainMenuScene not available in direct launch
+        window.location.href = '/game/select';
     }
 }

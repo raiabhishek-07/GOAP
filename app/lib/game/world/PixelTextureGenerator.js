@@ -592,24 +592,25 @@ export class PixelTextureGenerator {
         this._px(bodyCtx, 11, 0, GR);
         this._finish(bodyCanvas);
 
-        // Single leg (boot + shin) — 10×16, origin at top center for pivot at hip
-        const { canvas: legCanvas, ctx: legCtx } = this._createTex('player_leg', 10, 16);
+        // Single leg (boot + shin) — 12×18, origin at top center; armor colors to match body
+        const { canvas: legCanvas, ctx: legCtx } = this._createTex('player_leg', 12, 18);
         const BD2 = '#1a1a1a';
         const BL2 = '#2a2a2a';
-        this._rect(legCtx, 3, 0, 4, 10, A2);  // upper leg
-        this._rect(legCtx, 2, 1, 1, 8, A3, 0.6);
-        this._rect(legCtx, 3, 10, 4, 4, A3);  // lower leg
-        this._rect(legCtx, 2, 12, 6, 4, BL2); // boot
-        this._rect(legCtx, 2, 14, 6, 2, BD2);
+        this._rect(legCtx, 4, 0, 4, 12, A1);   // upper leg (lighter so visible)
+        this._rect(legCtx, 3, 1, 1, 10, A2, 0.7);
+        this._rect(legCtx, 4, 12, 4, 4, A2);   // lower leg / shin
+        this._rect(legCtx, 3, 13, 1, 3, A3, 0.6);
+        this._rect(legCtx, 2, 14, 8, 4, BL2);  // boot
+        this._rect(legCtx, 2, 16, 8, 2, BD2);  // sole
         this._finish(legCanvas);
 
-        // Single arm (sleeve + hand) — 8×14, origin at shoulder
-        const { canvas: armCanvas, ctx: armCtx } = this._createTex('player_arm', 8, 14);
+        // Single arm (sleeve + hand) — 10×16, origin at shoulder; clear silhouette
+        const { canvas: armCanvas, ctx: armCtx } = this._createTex('player_arm', 10, 16);
         const SK2 = '#deb887';
-        this._rect(armCtx, 2, 0, 4, 10, A1);   // sleeve
-        this._rect(armCtx, 1, 1, 1, 8, A2, 0.6);
-        this._rect(armCtx, 2, 10, 4, 4, SK2); // hand
-        this._rect(armCtx, 1, 11, 2, 2, SD, 0.5);
+        this._rect(armCtx, 3, 0, 4, 12, A1);    // sleeve
+        this._rect(armCtx, 2, 1, 1, 10, A2, 0.7);
+        this._rect(armCtx, 3, 12, 4, 4, SK2);  // hand
+        this._rect(armCtx, 2, 13, 2, 2, SD, 0.5);
         this._finish(armCanvas);
     }
 

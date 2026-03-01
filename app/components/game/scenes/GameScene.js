@@ -248,10 +248,12 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
         this.matchManager.startPlanPhase();
         this.tutorial.showHint('plan_phase');
 
-        // Zoom out to show the map
+        // Zoom out to show the map — calculate zoom to fit world without black borders
+        const { width: vw, height: vh } = this.cameras.main;
+        const fitZoom = Math.max(vw / WORLD_W, vh / WORLD_H, 0.55);
         this.cameras.main.stopFollow();
         this.cameras.main.pan(WORLD_W / 2, WORLD_H / 2, 500, 'Sine.easeOut');
-        this.cameras.main.zoomTo(0.45, 500, 'Sine.easeOut');
+        this.cameras.main.zoomTo(fitZoom, 500, 'Sine.easeOut');
 
         // Plan phase overlay text
         this.planOverlay = this.add.container(WORLD_W / 2, WORLD_H / 2).setDepth(500);

@@ -87,13 +87,11 @@ export class PreloadScene extends (Phaser ? Phaser.Scene : Object) {
                         this.cameras.main.fadeOut(500, 0, 0, 0);
                         this.cameras.main.once('camerafadeoutcomplete', () => {
                             // Check if this is a direct gameplay launch (from /game/play/[level]/[stage])
-                            const isDirect = this.registry.get('directLaunch');
-                            if (isDirect) {
-                                const lvl = this.registry.get('directLevel') || 1;
-                                const stg = this.registry.get('directStage') || 1;
+                            const launch = typeof window !== 'undefined' && window.__MINDARENA_LAUNCH__;
+                            if (launch && launch.directLaunch) {
                                 this.scene.start('DeploymentLoadingScene', {
-                                    level: lvl,
-                                    stage: stg
+                                    level: launch.level || 1,
+                                    stage: launch.stage || 1
                                 });
                             } else {
                                 this.scene.start('MainMenuScene');

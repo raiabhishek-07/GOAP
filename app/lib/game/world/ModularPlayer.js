@@ -26,25 +26,32 @@ export function createModularPlayer(scene, x, y, playerName = 'OPERATIVE_07') {
     body.setDrag(800, 800);
     body.setBounce(0);
 
+    const limScale = 1.8; // match body scale so limbs are proportional
+
     // ─── Visual parts (order = draw order: back → front) ───
-    const leftLeg = scene.add.image(-6, 0, 'player_leg')
-        .setOrigin(0.5, 0);
-    const rightLeg = scene.add.image(6, 0, 'player_leg')
+    const leftLeg = scene.add.image(-5, 0, 'player_leg')
         .setOrigin(0.5, 0)
+        .setScale(limScale);
+    const rightLeg = scene.add.image(5, 0, 'player_leg')
+        .setOrigin(0.5, 0)
+        .setScale(limScale)
         .setFlipX(true);
 
     const bodySprite = scene.add.image(0, 0, 'player_body')
         .setOrigin(0.5, 0.5)
-        .setScale(1.8);
+        .setScale(limScale);
 
-    const leftArm = scene.add.image(-10, -6, 'player_arm')
+    const leftArm = scene.add.image(-9, -5, 'player_arm')
         .setOrigin(0.5, 0)
+        .setScale(limScale)
         .setFlipX(true);
-    const rightArm = scene.add.image(10, -6, 'player_arm')
-        .setOrigin(0.5, 0);
+    const rightArm = scene.add.image(9, -5, 'player_arm')
+        .setOrigin(0.5, 0)
+        .setScale(limScale);
 
-    const gunSprite = scene.add.image(12, -14, 'loot_pistol')
-        .setOrigin(0, 0.5)
+    // Gun: origin at grip (bottom-center) so it extends forward; held in front of body
+    const gunSprite = scene.add.image(0, -10, 'loot_pistol')
+        .setOrigin(0.5, 1)
         .setVisible(false);
 
     container.add([leftLeg, rightLeg, bodySprite, leftArm, rightArm, gunSprite]);
@@ -100,73 +107,82 @@ export function createModularPlayer(scene, x, y, playerName = 'OPERATIVE_07') {
 
         const velMag = Math.sqrt(vx * vx + vy * vy);
 
-        // ─── Walk cycle (velocity-based speed, decay when idle) ───
+        // ─── Walk cycle (faster = snappier motion, velocity-scaled) ───
         if (isMoving) {
-            const walkSpeedMult = isSprinting ? 0.028 : 0.018;
+            const walkSpeedMult = isSprinting ? 0.036 : 0.024;
             anim.walkCycle += velMag * walkSpeedMult;
         } else {
-            anim.walkCycle = Phaser.Math.Linear(anim.walkCycle, 0, 0.2);
-            if (anim.walkCycle < 0.05) anim.walkCycle = 0;
+            anim.walkCycle = Phaser.Math.Linear(anim.walkCycle, 0, 0.18);
+            if (anim.walkCycle < 0.04) anim.walkCycle = 0;
         }
 
         const t = anim.walkCycle;
-        const legSwingAmt = 12;
-        const legRotateAmt = 0.2;
+        const legSwingY = 14;   // forward/back stride
+        const legStepX = 4;    // left/right step width
+        const legRotateAmt = 0.38;
 
-        // ─── Legs: sine wave Y offset + slight rotation (alternating) ───
-        const legSwing = Math.sin(t) * legSwingAmt;
-        vis.leftLeg.y = legSwing;
-        vis.rightLeg.y = -legSwing;
+        // ─── Legs: stride Y + step X + rotation (clear alternating walk) ───
+        const stride = Math.sin(t) * legSwingY;
+        const step = Math.cos(t) * legStepX;
+        vis.leftLeg.y = stride;
+        vis.rightLeg.y = -stride;
+        vis.leftLeg.x = -5 + step;
+        vis.rightLeg.x = 5 - step;
         vis.leftLeg.rotation = Math.sin(t) * legRotateAmt;
         vis.rightLeg.rotation = -Math.sin(t) * legRotateAmt;
 
-        // ─── Idle breathing: body scale ───
+        // ─── Body: idle breathing scale; when walking, subtle vertical bob ───
         anim.breathPhase += delta * 0.002;
+        const baseScale = limScale;
         if (!isMoving) {
-            const breathScale = 1 + Math.sin(anim.breathPhase) * 0.02;
-            vis.body.setScale(1.8 * breathScale);
+            const breathScale = 1 + Math.sin(anim.breathPhase) * 0.025;
+            vis.body.setScale(baseScale * breathScale);
+            vis.body.y = 0;
         } else {
-            vis.body.setScale(1.8);
+            vis.body.setScale(baseScale);
+            vis.body.y = Math.sin(t * 2) * 2; // walk bob
         }
 
-        // ─── Recoil: decay, or kick when triggerRecoil ───
+        // ─── Recoil: position + slight rotation kick ───
         if (triggerRecoil) {
-            anim.recoilOffset = 8 + Math.random() * 4;
+            anim.recoilOffset = 10 + Math.random() * 5;
         }
-        anim.recoilOffset = Phaser.Math.Linear(anim.recoilOffset, 0, 0.12);
+        anim.recoilOffset = Phaser.Math.Linear(anim.recoilOffset, 0, 0.1);
 
         const recoilY = anim.recoilOffset;
-        const weaponSway = isMoving ? Math.sin(t * 2) * 2 : 0;
-        const gunBob = isMoving ? Math.sin(t * 1.5) * 1.5 : 0;
+        const recoilRot = anim.recoilOffset * 0.012;
+        const weaponSway = isMoving ? Math.sin(t * 2) * 2.5 : 0;
+        const gunBob = isMoving ? Math.sin(t * 1.5) * 2 : 0;
 
         if (isAiming && weaponDef) {
             vis.gun.setVisible(true);
             vis.gun.setTexture(`loot_${weaponDef.id}`);
 
-            const gunX = 12;
-            const gunY = -14 - recoilY + weaponSway + gunBob;
-            vis.gun.setPosition(gunX, gunY);
-            vis.gun.rotation = 0;
+            // Gun in front of body (origin 0.5,1 = grip at bottom); recoil pushes back
+            const gunY = -10 + recoilY - weaponSway - gunBob;
+            vis.gun.setPosition(0, gunY);
+            vis.gun.rotation = recoilRot; // slight kick back when firing
 
-            // Arms grip weapon: follow gun position
-            const gripY = gunY + 4;
-            const foreY = gunY - 6;
-            vis.rightArm.setPosition(gunX - 2, gripY);
-            vis.rightArm.rotation = 0;
+            // Arms hold gun: right at grip, left forward on barrel
+            const gripY = gunY;
+            const foreY = gunY - 8;
+            vis.rightArm.setPosition(0, gripY);
+            vis.rightArm.rotation = recoilRot * 0.5;
             vis.rightArm.setVisible(true);
-            vis.leftArm.setPosition(gunX - 2, foreY);
-            vis.leftArm.rotation = 0;
+            vis.leftArm.setPosition(0, foreY);
+            vis.leftArm.rotation = recoilRot * 0.5;
             vis.leftArm.setVisible(true);
         } else {
             vis.gun.setVisible(false);
             vis.leftArm.setVisible(true);
             vis.rightArm.setVisible(true);
 
-            const handSwing = Math.cos(t) * 10;
-            vis.leftArm.setPosition(-10, -6 + handSwing);
-            vis.leftArm.rotation = Math.sin(t) * 0.1;
-            vis.rightArm.setPosition(10, -6 - handSwing);
-            vis.rightArm.rotation = -Math.sin(t) * 0.1;
+            const handSwing = Math.cos(t) * 14;
+            const armRot = Math.sin(t) * 0.14;
+            vis.leftArm.setPosition(-9, -5 + handSwing);
+            vis.leftArm.rotation = armRot;
+            vis.rightArm.setPosition(9, -5 - handSwing);
+            vis.rightArm.rotation = -armRot;
         }
     };
 

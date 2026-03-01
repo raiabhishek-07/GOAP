@@ -109,6 +109,16 @@ export default function CommandDashboard() {
                             titleClass="text-emerald-400"
                         />
                         <NavCard
+                            onClick={() => router.push('/game/open-world')}
+                            icon="🌍"
+                            title="Open World"
+                            desc="Explore a vast 1km procedural battleground with AI agents."
+                            cta="ENTER_WORLD"
+                            accentClass="bg-purple-950/20 border-purple-500/30 hover:border-purple-500"
+                            ctaClass="border-purple-500/50 group-hover:bg-purple-500"
+                            titleClass="text-purple-400"
+                        />
+                        <NavCard
                             onClick={() => router.push('/game/lobby')}
                             icon="📡"
                             title="Multiplayer"

@@ -14,6 +14,7 @@ import { BriefingScene } from "./scenes/BriefingScene";
 import { StatsScene } from "./scenes/StatsScene";
 import { LobbyScene } from "./scenes/LobbyScene";
 import { DeploymentLoadingScene } from "./scenes/DeploymentLoadingScene";
+import { SettingsScene } from "./scenes/SettingsScene";
 
 /**
  * GameLauncher — The ONLY React component in the game.
@@ -57,7 +58,8 @@ export default function GameLauncher() {
                 VictoryScene,
                 StatsScene,
                 LobbyScene,
-                DeploymentLoadingScene
+                DeploymentLoadingScene,
+                SettingsScene
             ],
             render: {
                 pixelArt: false,

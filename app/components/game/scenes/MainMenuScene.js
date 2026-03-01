@@ -327,7 +327,7 @@ export class MainMenuScene extends (Phaser ? Phaser.Scene : Object) {
             { label: 'ℹ ABOUT', x: cx + 150 },
         ];
 
-        navBtns.forEach(btn => {
+        navBtns.forEach((btn, i) => {
             const t = this.add.text(btn.x, barY, btn.label, {
                 fontSize: '10px',
                 fontFamily: '"Inter", "Segoe UI", sans-serif',
@@ -338,6 +338,17 @@ export class MainMenuScene extends (Phaser ? Phaser.Scene : Object) {
 
             t.on('pointerover', () => t.setColor('#f59e0b'));
             t.on('pointerout', () => t.setColor('#4a6a4a'));
+            
+            t.on('pointerup', () => {
+                if (btn.label.includes('SETTINGS')) {
+                    this.cameras.main.fadeOut(400, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        this.scene.start('SettingsScene');
+                    });
+                } else if (btn.label.includes('STATS')) {
+                    this.scene.start('StatsScene');
+                }
+            });
         });
 
         // Version

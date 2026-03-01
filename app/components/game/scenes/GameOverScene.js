@@ -145,7 +145,8 @@ export class GameOverScene extends (Phaser ? Phaser.Scene : Object) {
                 label: '>> ABORT', x: cx + 100, color: '#64748b', cb: () => {
                     this.cameras.main.fadeOut(400);
                     this.cameras.main.once('camerafadeoutcomplete', () => {
-                        this.scene.start('MainMenuScene');
+                        // Navigate via React Router — MainMenuScene not available in direct launch
+                        window.location.href = '/game/select';
                     });
                 }
             },

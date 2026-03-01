@@ -46,16 +46,16 @@ export default function MainMenuPage() {
                     onClick={() => navigateTo('/game/dashboard')}
                 />
                 <TacticalButton
+                    label="Open World"
+                    sub="1km procedural battleground"
+                    color="blue"
+                    onClick={() => navigateTo('/game/open-world')}
+                />
+                <TacticalButton
                     label="Mission Select"
                     sub="Browse & deploy missions"
                     color="amber"
                     onClick={() => navigateTo('/game/select')}
-                />
-                <TacticalButton
-                    label="Multiplayer"
-                    sub="Tactical network link"
-                    color="blue"
-                    onClick={() => navigateTo('/game/lobby')}
                 />
                 <TacticalButton
                     label="Player Dossier"

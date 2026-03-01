@@ -311,7 +311,8 @@ export class VictoryScene extends (Phaser ? Phaser.Scene : Object) {
 
         this.cameras.main.fadeOut(400);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('BriefingScene', { level: next.level, stage: next.stage });
+            // Navigate via React Router — BriefingScene may not be registered in direct launch
+            window.location.href = `/game/briefing/${next.level}/${next.stage}`;
         });
     }
 
@@ -325,7 +326,8 @@ export class VictoryScene extends (Phaser ? Phaser.Scene : Object) {
     toMenu() {
         this.cameras.main.fadeOut(400);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('MainMenuScene');
+            // Navigate via React Router — MainMenuScene not available in direct launch
+            window.location.href = '/game/select';
         });
     }
 }

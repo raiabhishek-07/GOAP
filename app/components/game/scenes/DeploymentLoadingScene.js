@@ -189,7 +189,7 @@ export class DeploymentLoadingScene extends (Phaser ? Phaser.Scene : Object) {
 
                 // Core
                 g.fillStyle(color, 0.8);
-                g.fillPoly([0, -15, 13, 8, -13, 8]);
+                g.fillTriangle(0, -15, 13, 8, -13, 8);
             }
         });
     }
