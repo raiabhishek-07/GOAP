@@ -87,8 +87,10 @@ export class MatchManager {
         // Reset match data
         this.matchStartTime = 0;
         this.matchDuration = 0;
-        this.timeLimit = this.stageConfig.timeLimit || 120;
+        this.timeLimit = this.stageConfig.timeLimit || 600; // Longer for training
+        this.planPhaseTime = (level === 0) ? 2.0 : 5.0; // Short plan phase for training
         this.planPhaseTimer = this.planPhaseTime;
+
         this.killCount = 0;
         this.totalEnemiesSpawned = this.stageConfig.agents?.length || 0;
         this.damageTaken = 0;
@@ -154,10 +156,12 @@ export class MatchManager {
             this.lastPlayerPos = { ...playerData.position };
         }
 
-        // Timer warnings at 30s, 15s, 10s, 5s
-        const remaining = this.getTimeRemaining();
-        if ([30, 15, 10, 5].includes(Math.ceil(remaining)) && remaining > 0) {
-            this._emit(this.onTimerWarning, Math.ceil(remaining));
+        // Timer warnings (disabled for training)
+        if (this.level !== 0) {
+            const remaining = this.getTimeRemaining();
+            if ([30, 15, 10, 5].includes(Math.ceil(remaining)) && remaining > 0) {
+                this._emit(this.onTimerWarning, Math.ceil(remaining));
+            }
         }
 
         // Check time up
@@ -172,11 +176,13 @@ export class MatchManager {
             return;
         }
 
-        // Check if AI completed everything
-        const totalTasks = this.taskSystem.getAllNonExtractionTasks().length;
-        if (totalTasks > 0 && this.taskSystem.getAgentCompletedCount() >= totalTasks) {
-            this.endMatch(END_REASON.OUTPLANNED, playerData);
-            return;
+        // Check if AI completed everything (AI doesn't compete in training)
+        if (this.level !== 0) {
+            const totalTasks = this.taskSystem.getAllNonExtractionTasks().length;
+            if (totalTasks > 0 && this.taskSystem.getAgentCompletedCount() >= totalTasks) {
+                this.endMatch(END_REASON.OUTPLANNED, playerData);
+                return;
+            }
         }
     }
 

@@ -28,6 +28,7 @@ export const TASK_TYPE = {
     INTEL_GATHER: 'intel_gather',     // Collect scattered orbs in area
     DEFENSE_HOLD: 'defense_hold',     // Survive in zone 10s
     EXTRACTION: 'extraction',       // Final — reach portal after all tasks
+    TREASURE_BOX: 'treasure_box',   // Collect treasure box
 };
 
 /**
@@ -78,6 +79,11 @@ export const TASK_META = {
         icon: '✈️', label: 'Extract', color: '#00e676',
         channelTime: 2.0, interruptible: false,
         description: 'Extraction point. Complete all objectives first.',
+    },
+    [TASK_TYPE.TREASURE_BOX]: {
+        icon: '🎁', label: 'Treasure Box', color: '#fbbf24',
+        channelTime: 2.0, interruptible: true,
+        description: 'Collect this rare treasure box before the AI gets it.',
     },
 };
 

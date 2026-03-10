@@ -51,6 +51,8 @@ export class TacticalAgent extends BaseSurvivor {
 
         // AI state
         this.position = { x, y };
+        this.spawnX = x;
+        this.spawnY = y;
         this.moveTarget = null;
         this.isMoving = false;
         this.playerTarget = null;
@@ -135,8 +137,13 @@ export class TacticalAgent extends BaseSurvivor {
         // Location beliefs
         if (this.locations.foodShack) {
             b('AtFood', () => this._distTo(this.locations.foodShack) < 30);
-            b('IsHealthy', () => this.health > 60);
         }
+
+        b('AtHome', () => {
+            if (!this.locations.home) return false;
+            return this._distTo(this.locations.home) < 40;
+        });
+        b('IsHealthy', () => this.health >= 80);
 
         // Patrol beliefs
         if (this.patrolPath.length > 0) {
@@ -184,6 +191,37 @@ export class TacticalAgent extends BaseSurvivor {
                 .addEffect(this.beliefs.Nothing)
                 .build()
         );
+
+        // ── UNIVERSAL: Survival ──
+        if (this.locations.home) {
+            this.actions.add(
+                AgentAction.builder('Move to Home')
+                    .withStrategy(new MoveStrategy(this, () => this.locations.home))
+                    .addEffect(this.beliefs.AtHome)
+                    .build()
+            );
+
+            this.actions.add(
+                AgentAction.builder('Heal')
+                    .withStrategy({
+                        canPerform: () => true,
+                        start: () => { this._healTimer = 0; },
+                        update: (dt) => {
+                            this._healTimer += dt;
+                            if (this._healTimer >= 3.0) { // 3 seconds healing
+                                this.health = this.maxHealth;
+                                return true;
+                            }
+                            return false;
+                        },
+                        stop: () => { },
+                        complete: () => this._healTimer >= 3.0
+                    })
+                    .addPrecondition(this.beliefs.AtHome)
+                    .addEffect(this.beliefs.IsHealthy)
+                    .build()
+            );
+        }
 
         // ── TYPE-SPECIFIC ACTIONS ──
 
@@ -270,7 +308,7 @@ export class TacticalAgent extends BaseSurvivor {
             AgentAction.builder('Chase Player')
                 .withCost(1)
                 .withStrategy(new MoveStrategy(this, () => this.playerTarget?.position, true))
-                .addPrecondition(this.beliefs.PlayerInChaseRange)
+                // Always capable of chasing if they want to attack (global hunt)
                 .addEffect(this.beliefs.PlayerInAttackRange)
                 .build()
         );
@@ -424,6 +462,13 @@ export class TacticalAgent extends BaseSurvivor {
             AgentGoal.builder('Idle').withPriority(1).withDesiredEffect(this.beliefs.Nothing).build()
         );
 
+        if (type !== AGENT_TYPE.TRAINING_DUMMY && type !== AGENT_TYPE.PATROL) {
+            this.goals.add(
+                AgentGoal.builder('Survive').withPriority(() => this.health < 30 ? 6 : 0)
+                    .withDesiredEffect(this.beliefs.IsHealthy).build()
+            );
+        }
+
         switch (type) {
             case AGENT_TYPE.PATROL:
                 this.goals.add(
@@ -456,7 +501,7 @@ export class TacticalAgent extends BaseSurvivor {
                 this.goals.add(
                     AgentGoal.builder('Defend').withPriority(() => {
                         if (!this.playerTarget) return 1;
-                        return this._distTo(this.playerTarget.position) < 120 ? 4 : 2;
+                        return this._distTo(this.playerTarget.position) < 500 ? 5 : 2;
                     }).withDesiredEffect(this.beliefs.AttackingPlayer).build()
                 );
                 break;
@@ -469,7 +514,7 @@ export class TacticalAgent extends BaseSurvivor {
                 this.goals.add(
                     AgentGoal.builder('Ambush Attack').withPriority(() => {
                         if (!this.playerTarget) return 1;
-                        return this._distTo(this.playerTarget.position) < 120 ? 5 : 1;
+                        return this._distTo(this.playerTarget.position) < 500 ? 5 : 1;
                     }).withDesiredEffect(this.beliefs.AttackingPlayer).build()
                 );
                 break;
@@ -497,6 +542,14 @@ export class TacticalAgent extends BaseSurvivor {
                 this.goals.add(
                     AgentGoal.builder('Destroy Player').withPriority(3)
                         .withDesiredEffect(this.beliefs.AttackingPlayer).build()
+                );
+                break;
+
+            case AGENT_TYPE.TRAINING_DUMMY:
+                // Training dummies have no active goals other than idling
+                this.goals.add(
+                    AgentGoal.builder('Stay Put').withPriority(5)
+                        .withDesiredEffect(this.beliefs.Nothing).build()
                 );
                 break;
         }
@@ -596,6 +649,12 @@ export class TacticalAgent extends BaseSurvivor {
     }
 
     _fallbackBehavior(dt) {
+        // Training dummies just stand still
+        if (this.agentType === AGENT_TYPE.TRAINING_DUMMY) {
+            this.stopMoving();
+            return;
+        }
+
         // Wander randomly
         if (!this._wanderTarget || this._distTo(this._wanderTarget) < 20) {
             this._wanderTarget = {

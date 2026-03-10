@@ -10,7 +10,9 @@ export default function GameLayout({ children }) {
 
     // ONLY initialize Phaser during actual gameplay (/game/play/[level]/[stage])
     // All menu pages use pure React — no Phaser at all
-    const isGameplay = pathname.includes('/play/');
+    const isPlay = pathname.includes('/play/');
+    const isTraining = pathname.includes('/training-ground');
+    const isGameplay = isPlay || isTraining;
 
     // Extract level/stage from URL like /game/play/1/2
     const playMatch = pathname.match(/\/play\/(\d+)\/(\d+)/);
@@ -18,16 +20,23 @@ export default function GameLayout({ children }) {
     const stage = playMatch ? playMatch[2] : null;
 
     useEffect(() => {
-        if (!isGameplay || !containerRef.current || !level || !stage) return;
+        if (!isGameplay || !containerRef.current) return;
+        if (isPlay && (level === null || stage === null)) return;
 
         let gameInstance;
         const setup = async () => {
-            // Pass level/stage so Phaser knows to skip menus and go straight to gameplay
-            gameInstance = await initGame(containerRef.current, {
-                directLaunch: true,
-                level: parseInt(level, 10),
-                stage: parseInt(stage, 10)
-            });
+            if (isTraining) {
+                gameInstance = await initGame(containerRef.current, {
+                    directLaunch: true,
+                    trainingMode: true
+                });
+            } else {
+                gameInstance = await initGame(containerRef.current, {
+                    directLaunch: true,
+                    level: parseInt(level, 10),
+                    stage: parseInt(stage, 10)
+                });
+            }
             setIsLoaded(true);
         };
         setup();

@@ -8,8 +8,8 @@ import { TASK_TYPE } from './TaskSystem.js';
 /**
  * World size constants
  */
-export const WORLD_W = 2400;
-export const WORLD_H = 1600;
+export const WORLD_W = 4000;
+export const WORLD_H = 3000;
 
 /**
  * Agent type definitions
@@ -22,6 +22,16 @@ export const AGENT_TYPE = {
     AMBUSHER: 'ambusher',     // Waits at chokepoints
     STRATEGIST: 'strategist',   // Plans and coordinates
     MASTERMIND: 'mastermind',   // Boss — uses all strategies
+    TRAINING_DUMMY: 'training_dummy', // Target for practice
+};
+
+/**
+ * Level type definitions
+ */
+export const LEVEL_TYPE = {
+    CAMPAIGN: 'campaign',
+    TRAINING: 'training',
+    OPEN_WORLD: 'open_world',
 };
 
 /**
@@ -29,12 +39,13 @@ export const AGENT_TYPE = {
  */
 export const AGENT_META = {
     [AGENT_TYPE.PATROL]: { speed: 55, chaseRange: 80, attackRange: 30, color: 0x90a4ae, label: 'Patrol Guard', canDoTasks: false },
-    [AGENT_TYPE.STALKER]: { speed: 75, chaseRange: 200, attackRange: 40, color: 0xef5350, label: 'Shadow Stalker', canDoTasks: false },
+    [AGENT_TYPE.STALKER]: { speed: 75, chaseRange: 400, attackRange: 300, color: 0xef5350, label: 'Shadow Stalker', canDoTasks: false },
     [AGENT_TYPE.RACER]: { speed: 100, chaseRange: 0, attackRange: 0, color: 0x42a5f5, label: 'Task Racer', canDoTasks: true },
-    [AGENT_TYPE.DEFENDER]: { speed: 40, chaseRange: 100, attackRange: 35, color: 0xff9800, label: 'Defender', canDoTasks: false },
-    [AGENT_TYPE.AMBUSHER]: { speed: 65, chaseRange: 120, attackRange: 40, color: 0x7e57c2, label: 'Ambusher', canDoTasks: false },
-    [AGENT_TYPE.STRATEGIST]: { speed: 70, chaseRange: 180, attackRange: 35, color: 0x26c6da, label: 'Strategist', canDoTasks: true },
-    [AGENT_TYPE.MASTERMIND]: { speed: 85, chaseRange: 300, attackRange: 45, color: 0xffd740, label: 'Master Mind', canDoTasks: true },
+    [AGENT_TYPE.DEFENDER]: { speed: 40, chaseRange: 350, attackRange: 300, color: 0xff9800, label: 'Defender', canDoTasks: false },
+    [AGENT_TYPE.AMBUSHER]: { speed: 65, chaseRange: 250, attackRange: 300, color: 0x7e57c2, label: 'Ambusher', canDoTasks: false },
+    [AGENT_TYPE.STRATEGIST]: { speed: 70, chaseRange: 180, attackRange: 300, color: 0x26c6da, label: 'Strategist', canDoTasks: true },
+    [AGENT_TYPE.MASTERMIND]: { speed: 85, chaseRange: 300, attackRange: 300, color: 0xffd740, label: 'Master Mind', canDoTasks: true },
+    [AGENT_TYPE.TRAINING_DUMMY]: { speed: 0, chaseRange: 0, attackRange: 0, color: 0xffff00, label: 'Target Dummy', canDoTasks: false, isTraining: true },
 };
 
 /**
@@ -67,21 +78,23 @@ export const MIND_ARENA_LEVELS = {
                 playerSpawn: { x: 200, y: 800 },
 
                 agents: [
-                    { type: AGENT_TYPE.PATROL, spawn: { x: 1200, y: 600 }, patrolPath: [{ x: 1000, y: 400 }, { x: 1400, y: 800 }] },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 1200, y: 600 } },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1800, y: 800 }, guardTarget: 'terminal_c' },
+                    { type: AGENT_TYPE.AMBUSHER, spawn: { x: 900, y: 700 }, ambushPoints: [{ x: 800, y: 600 }, { x: 1000, y: 800 }] },
                 ],
 
                 tasks: [
                     {
                         id: 'terminal_a', type: TASK_TYPE.TERMINAL, name: 'Terminal Alpha',
-                        position: { x: 600, y: 500 }, basePoints: 200, priority: 2,
+                        position: { x: 600, y: 500 }, basePoints: 200, priority: 2, channelTime: 8,
                     },
                     {
                         id: 'terminal_b', type: TASK_TYPE.TERMINAL, name: 'Terminal Beta',
-                        position: { x: 1200, y: 400 }, basePoints: 300, priority: 3,
+                        position: { x: 1200, y: 400 }, basePoints: 300, priority: 3, channelTime: 8,
                     },
                     {
                         id: 'terminal_c', type: TASK_TYPE.TERMINAL, name: 'Terminal Gamma',
-                        position: { x: 1800, y: 900 }, basePoints: 500, priority: 5,
+                        position: { x: 1800, y: 900 }, basePoints: 500, priority: 5, channelTime: 8,
                     },
                 ],
 
@@ -94,6 +107,8 @@ export const MIND_ARENA_LEVELS = {
                     restArea: { x: 1600, y: 1200 },
                     doorOne: { x: 900, y: 700 },
                     doorTwo: { x: 1500, y: 500 },
+                    home: { x: 1400, y: 1200 },
+                    healthKits: [{ x: 300, y: 700 }, { x: 1000, y: 500 }, { x: 1500, y: 800 }]
                 },
 
                 tips: [
@@ -703,6 +718,71 @@ export const MIND_ARENA_LEVELS = {
             },
         },
     },
+
+    // ════════════════════════════════════════════════════════
+    // LEVEL 0: TRAINING — "The Training Ground"
+    // ════════════════════════════════════════════════════════
+    0: {
+        name: 'Training Ground',
+        subtitle: 'Tactical Orientation',
+        description: 'A zero-risk simulation environment to master movement, weapons, and vehicles.',
+        color: '#f97316',
+        type: LEVEL_TYPE.TRAINING,
+        unlocked: true,
+        stages: {
+            1: {
+                name: 'Standard Drills',
+                subtitle: 'Combat Orientation',
+                objective: 'Collect all 3 Treasure Boxes while surviving hostile GOAP agents.',
+                description: 'Welcome to the MindArena Training Ground. GOAP Agents are actively planning to eliminate you and steal the objectives. Adapt and survive.',
+                timeLimit: 600,
+                difficulty: 2,
+                showTutorial: true,
+                showAgentPlan: true, // Guided experience
+                isTraining: true,
+                playerSpawn: { x: 500, y: 500 },
+
+                agents: [
+                    // Hostile GOAP agents forming to kill the player
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 1200, y: 800 } },
+                    { type: AGENT_TYPE.AMBUSHER, spawn: { x: 2500, y: 2200 }, ambushPoints: [{ x: 1500, y: 1500 }, { x: 2000, y: 800 }] },
+                    { type: AGENT_TYPE.STRATEGIST, spawn: { x: 2200, y: 600 } },
+                    { type: AGENT_TYPE.RACER, spawn: { x: 3000, y: 1500 } },
+                ],
+
+                tasks: [
+                    {
+                        id: 'treasure_1', type: TASK_TYPE.TREASURE_BOX, name: 'Treasure Box Alpha',
+                        position: { x: 1500, y: 400 }, basePoints: 500, priority: 5,
+                    },
+                    {
+                        id: 'treasure_2', type: TASK_TYPE.TREASURE_BOX, name: 'Treasure Box Beta',
+                        position: { x: 2500, y: 2300 }, basePoints: 500, priority: 5,
+                    },
+                    {
+                        id: 'treasure_3', type: TASK_TYPE.TREASURE_BOX, name: 'Treasure Box Gamma',
+                        position: { x: 3500, y: 1500 }, basePoints: 500, priority: 5,
+                    },
+                ],
+
+                extraction: { x: 3800, y: 2800 },
+
+                locations: {
+                    armory: { x: 400, y: 400 },
+                    firingRange: { x: 1500, y: 400 },
+                    killHouse: { x: 2500, y: 2300 },
+                    vehicleBay: { x: 3500, y: 1500 },
+                },
+
+                tips: [
+                    'The AI agents use GOAP to THINK and PLAN. They are actively hunting you!',
+                    'Stalkers will chase you, Ambushers set traps, and Strategists coordinate.',
+                    'Your only goal: Collect the 3 Treasure Boxes before they stop you.',
+                    'Watch their plan overhead to anticipate their next move.',
+                ],
+            },
+        },
+    },
 };
 
 // ─── HELPER FUNCTIONS ───────────────────────────────────
@@ -728,7 +808,8 @@ export function getStageTasks(level, stage) {
  */
 export function getTotalStages() {
     let count = 0;
-    for (const level of Object.values(MIND_ARENA_LEVELS)) {
+    for (const [levelKey, level] of Object.entries(MIND_ARENA_LEVELS)) {
+        if (levelKey === '0') continue; // Don't count training in campaign total
         count += Object.keys(level.stages).length;
     }
     return count;
@@ -738,7 +819,7 @@ export function getTotalStages() {
  * Check if a level is unlocked based on progress
  */
 export function isLevelUnlocked(level, progress = {}) {
-    if (level === 1) return true;
+    if (level === 1 || level === 0) return true;
     // Level N requires all stages of level N-1 completed
     const prevLevel = MIND_ARENA_LEVELS[level - 1];
     if (!prevLevel) return false;

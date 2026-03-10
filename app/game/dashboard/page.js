@@ -3,27 +3,30 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SaveSystem } from "../../lib/game/SaveSystem";
 import { TacticalPanel, TacticalStat, TacticalProgressBar } from "../../components/game/TacticalUI";
+import { MIND_ARENA_LEVELS, isLevelUnlocked } from "../../lib/game/LevelConfig";
 
 /**
  * Tactical Command Dashboard
- * Central hub for player progress and mission oversight.
+ * Unified hub for training, missions, and progression.
  */
 export default function CommandDashboard() {
     const router = useRouter();
     const [summary, setSummary] = useState(null);
     const [currentTime, setCurrentTime] = useState("");
+    const [progress, setProgress] = useState(null);
 
     useEffect(() => {
         try {
             setSummary(SaveSystem.getProgressionSummary());
+            setProgress(SaveSystem.getProgress());
         } catch (e) {
-            // Fallback if save system has issues
             setSummary({
                 completionPercent: 0,
                 cognitiveAverages: { planning: 0, adaptability: 0, efficiency: 0 },
                 stats: { highestRank: 'INITIATE', totalKills: 0, totalTasksCompleted: 0, totalTimeSeconds: 0, totalScore: 0, gamesPlayed: 0 },
                 abilities: {}
             });
+            setProgress({});
         }
 
         const tick = () => {
@@ -41,143 +44,172 @@ export default function CommandDashboard() {
     const safeCog = summary.cognitiveAverages || {};
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-950/60 text-slate-200 p-8 space-y-8 animate-in fade-in duration-700">
-            {/* Header / ID Bar */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/10 pb-6 gap-4">
-                <div className="flex gap-6 items-center">
-                    <div className="w-14 h-14 border-2 border-emerald-500/50 flex items-center justify-center bg-black/40 rotate-45 shrink-0">
-                        <span className="-rotate-45 text-xl">◈</span>
+        <>
+            <CyberBackground />
+            <div className="flex flex-col min-h-screen bg-slate-950/60 text-slate-200 p-8 space-y-8 animate-in fade-in duration-700 relative overflow-hidden">
+                {/* Header / ID Bar */}
+                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/10 pb-6 gap-4">
+                    <div className="flex gap-6 items-center">
+                        <div className="w-16 h-16 border-2 border-emerald-500/50 flex items-center justify-center bg-black/60 rotate-45 shrink-0 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                            <span className="-rotate-45 text-2xl text-emerald-400">◈</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <h1 className="text-3xl font-black tracking-[0.3em] text-white uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">COMMAND_HUB</h1>
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-mono text-emerald-500 tracking-[0.2em] uppercase animate-pulse">● System_Online</span>
+                                <span className="text-[10px] font-mono text-slate-500 tracking-[0.2em] uppercase">Auth: V7-G-ALPHA</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex flex-col">
-                        <h1 className="text-2xl font-black tracking-[0.4em] text-white uppercase">COMMAND_HUB</h1>
-                        <span className="text-[10px] font-mono text-emerald-500 tracking-[0.2em] uppercase">Status: Authorization_Verified</span>
+
+                    <div className="flex gap-8 sm:gap-12 text-right">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-slate-500 tracking-widest uppercase mb-1">Sector_Temporal</span>
+                            <span className="text-xl font-mono font-black text-emerald-400 tabular-nums">{currentTime}</span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex gap-8 sm:gap-12 text-right">
-                    <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-slate-500 tracking-widest uppercase mb-1">Local Time</span>
-                        <span className="text-lg font-mono font-black text-emerald-400">{currentTime}</span>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+                    {/* Left Panel: Profile & Stats */}
+                    <div className="lg:col-span-3 space-y-6 relative z-10">
+                        <TacticalPanel title="OPERATIVE_DATA">
+                            <div className="p-4 bg-emerald-950/10 border border-emerald-500/10 rounded-lg mb-4 text-center">
+                                <span className="text-[9px] font-black text-emerald-500/60 uppercase tracking-widest block mb-1">Neural Rank</span>
+                                <span className="text-2xl font-mono font-black text-white">{safeStats.highestRank || 'INITIATE'}</span>
+                            </div>
+                            <div className="space-y-4">
+                                <TacticalProgressBar label="Progression" val={summary.completionPercent || 0} color="emerald" />
+                                <div className="grid grid-cols-2 gap-2 mt-4">
+                                    <div className="p-2 border border-white/5 bg-black/20 text-center">
+                                        <span className="text-[8px] text-slate-500 block uppercase">Kills</span>
+                                        <span className="text-sm font-mono text-emerald-400">{safeStats.totalKills || 0}</span>
+                                    </div>
+                                    <div className="p-2 border border-white/5 bg-black/20 text-center">
+                                        <span className="text-[8px] text-slate-500 block uppercase">Tasks</span>
+                                        <span className="text-sm font-mono text-emerald-400">{safeStats.totalTasksCompleted || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </TacticalPanel>
+
+                        <TacticalPanel title="SYSTEM_LOGS">
+                            <div className="space-y-2 font-mono text-[9px] text-slate-400">
+                                <div className="flex justify-between border-b border-white/5 pb-1">
+                                    <span>CONNECTION</span>
+                                    <span className="text-emerald-500">OPTIMAL</span>
+                                </div>
+                                <div className="flex justify-between border-b border-white/5 pb-1">
+                                    <span>NEURAL_LINK</span>
+                                    <span className="text-emerald-500">98.4%</span>
+                                </div>
+                                <div className="flex justify-between border-b border-white/5 pb-1">
+                                    <span>ENCRYPTION</span>
+                                    <span className="text-amber-500">V7_ACTIVE</span>
+                                </div>
+                            </div>
+                        </TacticalPanel>
                     </div>
-                    <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-slate-500 tracking-widest uppercase mb-1">Neural Rank</span>
-                        <span className="text-lg font-mono font-black text-white">{safeStats.highestRank || 'INITIATE'}</span>
+
+                    {/* Center: Main Deployment */}
+                    <div className="lg:col-span-6 space-y-6 relative z-10">
+                        {/* Training Ground Hero */}
+                        <div className="relative group cursor-pointer overflow-hidden border border-orange-500/30 bg-orange-950/10 rounded-xl p-8 transition-all duration-500 hover:border-orange-500 hover:bg-orange-900/20"
+                            onClick={() => router.push('/game/training-ground')}>
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-all text-8xl grayscale-0 group-hover:scale-110">🏋️</div>
+                            <div className="relative z-10">
+                                <span className="inline-block px-3 py-1 bg-orange-500 text-black text-[9px] font-black tracking-widest uppercase mb-4 rounded-sm">Highly Recommended</span>
+                                <h2 className="text-4xl font-black tracking-tighter text-white mb-2 uppercase group-hover:text-orange-400 transition-colors">Training Ground</h2>
+                                <p className="text-sm text-slate-400 leading-relaxed max-w-md mb-6 font-medium">
+                                    Master tactical movement, weapon systems, and vehicle handling in a zero-risk
+                                    cybernetic simulation environment. Essential for new operatives.
+                                </p>
+                                <div className="flex gap-4">
+                                    <span className="px-6 py-2 border border-orange-500/50 text-orange-500 text-[10px] font-black tracking-widest uppercase group-hover:bg-orange-500 group-hover:text-black transition-all">
+                                        Initialize_Drill
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Summary Metrics */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="p-4 border border-white/5 bg-black/20 rounded-lg">
+                                <span className="text-[8px] text-slate-500 block uppercase tracking-widest mb-1">Total Score</span>
+                                <span className="text-xl font-mono text-white">{safeStats.totalScore || 0}</span>
+                            </div>
+                            <div className="p-4 border border-white/5 bg-black/20 rounded-lg">
+                                <span className="text-[8px] text-slate-500 block uppercase tracking-widest mb-1">Time Active</span>
+                                <span className="text-xl font-mono text-white">{((safeStats.totalTimeSeconds || 0) / 60).toFixed(1)}m</span>
+                            </div>
+                            <div className="p-4 border border-white/5 bg-black/20 rounded-lg">
+                                <span className="text-[8px] text-slate-500 block uppercase tracking-widest mb-1">Adaptability</span>
+                                <span className="text-xl font-mono text-amber-500">{safeCog.adaptability || 0}%</span>
+                            </div>
+                            <div className="p-4 border border-white/5 bg-black/20 rounded-lg">
+                                <span className="text-[8px] text-slate-500 block uppercase tracking-widest mb-1">Strategic</span>
+                                <span className="text-xl font-mono text-blue-500">{safeCog.planning || 0}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Panel: Mission Roster */}
+                    <div className="lg:col-span-3 space-y-6 relative z-10">
+                        <div className="relative group cursor-pointer overflow-hidden border border-emerald-500/30 bg-emerald-950/10 rounded-xl p-8 transition-all duration-500 hover:border-emerald-500 hover:bg-emerald-900/20"
+                            onClick={() => router.push('/game/select')}>
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-all text-8xl grayscale-0 group-hover:scale-110">🗺️</div>
+                            <div className="relative z-10">
+                                <span className="inline-block px-3 py-1 bg-emerald-500 text-black text-[9px] font-black tracking-widest uppercase mb-4 rounded-sm">Primary Objective</span>
+                                <h2 className="text-4xl font-black tracking-tighter text-white mb-2 uppercase group-hover:text-emerald-400 transition-colors">Solo Campaign</h2>
+                                <p className="text-sm text-slate-400 leading-relaxed max-w-md mb-6 font-medium">
+                                    Deploy into active warzones, dismantle hostile AI architectures, and execute strategic operations to stabilize the sector.
+                                </p>
+                                <div className="flex gap-4">
+                                    <span className="px-6 py-2 border border-emerald-500/50 text-emerald-500 text-[10px] font-black tracking-widest uppercase group-hover:bg-emerald-500 group-hover:text-black transition-all">
+                                        Mission_Select
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <button onClick={() => router.push('/game/stats')} className="w-full py-3 border border-blue-500/20 bg-blue-500/5 text-[9px] font-black text-blue-400 tracking-widest uppercase hover:bg-blue-500/10 transition-all rounded">Dossier Access</button>
+                            <button onClick={() => router.push('/game/settings')} className="w-full py-3 border border-white/5 bg-black/20 text-[9px] font-black text-slate-500 tracking-widest uppercase hover:text-white transition-all rounded">System Settings</button>
+                            <button onClick={() => router.push('/game')} className="w-full py-3 border border-red-500/20 bg-red-500/5 text-[9px] font-black text-red-500 tracking-widest uppercase hover:bg-red-500/10 transition-all rounded">Abort Connection</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 flex-1">
-                {/* Left Column - Core Metrics */}
-                <div className="md:col-span-4 space-y-6">
-                    <TacticalPanel title="OPERATIONAL_SYNC">
-                        <div className="space-y-5 pt-2">
-                            <TacticalProgressBar label="Overall Completion" val={summary.completionPercent || 0} color="emerald" />
-                            <TacticalProgressBar label="Adaptability Index" val={safeCog.adaptability || 0} color="amber" />
-                            <TacticalProgressBar label="Strategic Depth" val={safeCog.planning || 0} color="blue" />
-                        </div>
-                    </TacticalPanel>
+            <style jsx global>{`
+                .glow-text {
+                    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+                }
+            `}</style>
+        </>
+    );
+}
 
-                    <TacticalPanel title="SYSTEM_ALERTS">
-                        <div className="space-y-3 font-mono text-[9px] text-slate-400">
-                            <div className="flex gap-2">
-                                <span className="text-emerald-500">[OK]</span>
-                                <span>Neural link stability at 98.4%</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <span className="text-amber-500">[!]</span>
-                                <span>New mission profile detected in Sector 2</span>
-                            </div>
-                            <div className="flex gap-2 text-slate-600">
-                                <span>[INFO]</span>
-                                <span>Auto-save sequence complete</span>
-                            </div>
-                        </div>
-                    </TacticalPanel>
-                </div>
-
-                {/* Right Column - Mission Control & Launch */}
-                <div className="md:col-span-8 flex flex-col gap-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <NavCard
-                            onClick={() => router.push('/game/select')}
-                            icon="⚔"
-                            title="Solo Campaign"
-                            desc="Deploy against advanced AI agents in tactical scenarios."
-                            cta="LAUNCH_SELECTOR"
-                            accentClass="bg-emerald-950/20 border-emerald-500/30 hover:border-emerald-500"
-                            ctaClass="border-emerald-500/50 group-hover:bg-emerald-500"
-                            titleClass="text-emerald-400"
-                        />
-                        <NavCard
-                            onClick={() => router.push('/game/open-world')}
-                            icon="🌍"
-                            title="Open World"
-                            desc="Explore a vast 1km procedural battleground with AI agents."
-                            cta="ENTER_WORLD"
-                            accentClass="bg-purple-950/20 border-purple-500/30 hover:border-purple-500"
-                            ctaClass="border-purple-500/50 group-hover:bg-purple-500"
-                            titleClass="text-purple-400"
-                        />
-                        <NavCard
-                            onClick={() => router.push('/game/lobby')}
-                            icon="📡"
-                            title="Multiplayer"
-                            desc="Connect with other operatives via tactical network links."
-                            cta="OPEN_NETWORK"
-                            accentClass="bg-blue-950/20 border-blue-500/30 hover:border-blue-500"
-                            ctaClass="border-blue-500/50 group-hover:bg-blue-500"
-                            titleClass="text-blue-400"
-                        />
-                        <NavCard
-                            onClick={() => router.push('/game/select')}
-                            icon="🎯"
-                            title="Mission Select"
-                            desc="Browse tiers & deploy to any unlocked mission zone."
-                            cta="OPEN_MISSIONS"
-                            accentClass="bg-amber-950/20 border-amber-500/30 hover:border-amber-500"
-                            ctaClass="border-amber-500/50 group-hover:bg-amber-500"
-                            titleClass="text-amber-400"
-                        />
-                        <NavCard
-                            onClick={() => router.push('/game/stats')}
-                            icon="👤"
-                            title="Operative Dossier"
-                            desc="Career metrics, neural analysis, and combat certifications."
-                            cta="ACCESS_FILE"
-                            accentClass="bg-slate-900/40 border-white/5 hover:border-white/20"
-                            ctaClass="border-white/20 group-hover:bg-white"
-                            titleClass="text-white"
-                        />
-                    </div>
-
-                    <TacticalPanel title="RECENT_PERFORMANCE">
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-2">
-                            <TacticalStat label="Total Kills" value={safeStats.totalKills || 0} icon="🎯" />
-                            <TacticalStat label="Tasks Finished" value={safeStats.totalTasksCompleted || 0} icon="⚙" />
-                            <TacticalStat label="Mission Time" value={`${((safeStats.totalTimeSeconds || 0) / 60).toFixed(1)}m`} icon="⏱" />
-                            <TacticalStat label="Rank Pts" value={safeStats.totalScore || 0} icon="⭐" />
-                        </div>
-                    </TacticalPanel>
-
-                    <div className="flex gap-4 mt-auto">
-                        <button
-                            onClick={() => router.push('/game/settings')}
-                            className="flex-1 py-4 border border-white/5 bg-black/20 text-[10px] font-black tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all uppercase"
-                        >
-                            ⚙ Settings
-                        </button>
-                        <button className="flex-1 py-4 border border-white/5 bg-black/20 text-[10px] font-black tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all uppercase">
-                            📁 Archives
-                        </button>
-                        <button
-                            onClick={() => router.push('/game')}
-                            className="px-6 py-4 border border-red-500/30 text-red-500 text-[10px] font-black tracking-widest hover:bg-red-500 hover:text-black transition-all uppercase"
-                        >
-                            Log Out
-                        </button>
-                    </div>
-                </div>
-            </div>
+function CyberBackground() {
+    return (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#020617]">
+            <div className="absolute inset-0 opacity-[0.1]"
+                style={{
+                    backgroundImage: 'radial-gradient(circle, #10b981 1px, transparent 1px)',
+                    backgroundSize: '40px 40px'
+                }}
+            />
+            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%] animate-scan" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/5 blur-[150px] rounded-full" />
+            <style jsx>{`
+                @keyframes scan {
+                    0% { background-position: 0 0; }
+                    100% { background-position: 0 100%; }
+                }
+                .animate-scan {
+                    animation: scan 10s linear infinite;
+                }
+            `}</style>
         </div>
     );
 }
@@ -186,16 +218,28 @@ function NavCard({ onClick, icon, title, desc, cta, accentClass, ctaClass, title
     return (
         <button
             onClick={onClick}
-            className={`group relative h-44 ${accentClass} border overflow-hidden transition-all text-left p-5`}
+            className={`group relative h-48 ${accentClass} border overflow-hidden transition-all duration-300 text-left p-6 shadow-xl`}
         >
-            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                <span className="text-7xl">{icon}</span>
+            {/* Holographic background line */}
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-all duration-500 group-hover:rotate-12 group-hover:scale-110">
+                <span className="text-8xl">{icon}</span>
             </div>
-            <h3 className={`text-lg font-black tracking-widest ${titleClass} mb-2 uppercase`}>{title}</h3>
-            <p className="text-[10px] text-slate-400 leading-relaxed w-3/4">{desc}</p>
-            <div className={`absolute bottom-5 right-5 px-3 py-1.5 border ${ctaClass} group-hover:text-black transition-all`}>
-                <span className="text-[9px] font-black tracking-widest">{cta}</span>
+
+            <div className="relative z-10">
+                <h3 className={`text-xl font-black tracking-widest ${titleClass} mb-3 uppercase group-hover:translate-x-1 transition-transform`}>{title}</h3>
+                <p className="text-[11px] text-slate-400 leading-relaxed w-5/6 font-medium">{desc}</p>
             </div>
+
+            <div className={`absolute bottom-6 right-6 px-4 py-2 border ${ctaClass} group-hover:text-black transition-all duration-300 shadow-lg`}>
+                <span className="text-[10px] font-black tracking-widest uppercase">{cta}</span>
+            </div>
+
+            {/* Hover Glitch Line */}
+            <div className="absolute bottom-0 left-0 w-0 h-1 bg-current opacity-0 group-hover:w-full group-hover:opacity-100 transition-all duration-500" />
         </button>
     );
 }
+
+

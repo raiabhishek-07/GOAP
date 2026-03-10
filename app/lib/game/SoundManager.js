@@ -128,6 +128,20 @@ export class SoundManager {
 
     // ── COMBAT SOUNDS ──────────────────────────────────
 
+    /** Gun Shoot */
+    static shoot() {
+        playNoise(0.05, 0.4);
+        playTone(600, 0.05, 'square', 0.3);
+        setTimeout(() => playTone(300, 0.05, 'sawtooth', 0.2), 30);
+    }
+
+    /** Gun Reload */
+    static reload() {
+        playTone(800, 0.1, 'square', 0.1);
+        setTimeout(() => playTone(1200, 0.05, 'square', 0.15), 150);
+        setTimeout(() => playTone(1000, 0.05, 'sine', 0.1), 300);
+    }
+
     /** Player attack / hit */
     static attackHit() {
         playNoise(0.08, 0.25);
@@ -162,6 +176,24 @@ export class SoundManager {
         playTone(600, 0.08, 'sine', 0.15);
         playTone(900, 0.06, 'sine', 0.1);
         playNoise(0.05, 0.1);
+    }
+
+    /** Walk step */
+    static walk() {
+        playNoise(0.03, 0.05);
+        playTone(200, 0.03, 'triangle', 0.05);
+    }
+
+    /** Run step */
+    static run() {
+        playNoise(0.04, 0.08);
+        playTone(250, 0.04, 'triangle', 0.08);
+    }
+
+    /** Car Engine loop part */
+    static carEngine() {
+        playTone(100, 0.2, 'sawtooth', 0.05, false);
+        playNoise(0.2, 0.02);
     }
 
     // ── TASK SOUNDS ────────────────────────────────────
@@ -228,6 +260,12 @@ export class SoundManager {
     static healthPickup() {
         playTone(600, 0.1, 'sine', 0.2);
         setTimeout(() => playTone(900, 0.12, 'sine', 0.15), 80);
+    }
+
+    /** Healing channel tick */
+    static heal() {
+        playTone(400, 0.1, 'sine', 0.15);
+        setTimeout(() => playTone(800, 0.15, 'sine', 0.2), 150);
     }
 
     // ── GAME STATE SOUNDS ──────────────────────────────

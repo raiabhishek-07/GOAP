@@ -9,8 +9,8 @@ export class GameOverScene extends (Phaser ? Phaser.Scene : Object) {
     }
 
     init(data) {
-        this.level = data.level || 1;
-        this.stage = data.stage || 1;
+        this.level = data.level ?? 1;
+        this.stage = data.stage ?? 1;
         this.endReason = data.endReason || 'eliminated';
         this.results = data.results || null;
     }

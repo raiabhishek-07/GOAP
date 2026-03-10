@@ -11,16 +11,16 @@ export class DeploymentLoadingScene extends (Phaser ? Phaser.Scene : Object) {
     }
 
     init(data) {
-        this.level = data.level || 1;
-        this.stage = data.stage || 1;
+        this.level = data.level ?? 1;
+        this.stage = data.stage ?? 1;
     }
 
     create() {
         const { width, height } = this.scale;
         const cx = width / 2;
         const cy = height / 2;
-        const levelConfig = MIND_ARENA_LEVELS[this.level];
-        const themeColor = Phaser.Display.Color.HexStringToColor(levelConfig.color).color;
+        const levelConfig = MIND_ARENA_LEVELS[this.level] || { color: '#ffffff' };
+        const themeColor = Phaser.Display.Color.HexStringToColor(levelConfig.color || '#ffffff').color;
 
         // ─── BACKGROUND ────────────────────────────────
         const bg = this.add.graphics();
@@ -112,10 +112,42 @@ export class DeploymentLoadingScene extends (Phaser ? Phaser.Scene : Object) {
         } else if (this.level === 2) {
             // LEVEL 2: Tactical Nodes (Relay)
             this.drawTacticalNodes(container, color);
+        } else if (this.level === 0) {
+            // LEVEL 0: Virtual Simulation (Training)
+            this.drawSimulationGrid(container, color);
         } else {
             // LEVEL 3: Neural Nexus (Mastery)
             this.drawNeuralNexus(container, color);
         }
+    }
+
+    drawSimulationGrid(container, color) {
+        const g = this.add.graphics();
+        container.add(g);
+
+        this.tweens.addCounter({
+            from: 0, to: 100, duration: 3000, repeat: -1,
+            onUpdate: (tween) => {
+                const t = tween.getValue() / 100;
+                g.clear();
+                g.lineStyle(2, color, 0.6);
+
+                // Scanning horizontal line
+                const scanLineY = -100 + (t * 200);
+                g.lineBetween(-150, scanLineY, 150, scanLineY);
+
+                // Grid Perspective
+                g.lineStyle(1, color, 0.2);
+                for (let i = -100; i <= 100; i += 40) {
+                    g.lineBetween(i * 1.5, 100, i * 0.5, -100); // Vertical vanishing
+                    g.lineBetween(-150, i, 150, i); // Horizontal
+                }
+
+                // Hazard warning overlay (tiny icons)
+                g.fillStyle(color, 0.4);
+                g.fillTriangle(-8, scanLineY - 12, 8, scanLineY - 12, 0, scanLineY - 24);
+            }
+        });
     }
 
     drawBlueprintCube(container, color) {

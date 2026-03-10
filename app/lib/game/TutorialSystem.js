@@ -10,18 +10,44 @@ export class TutorialSystem {
         this.active = !!scene.levelConfig.showTutorial;
         this.currentStep = 0;
         this.overlays = [];
-        this.hints = [
+        this.hints = this.getHintsForLevel();
+        this.triggered = new Set();
+    }
+
+    getHintsForLevel() {
+        if (this.scene.levelNum === 0) {
+            // Training Ground Level 0
+            return [
+                {
+                    trigger: 'start',
+                    title: 'COMBAT TRAINING',
+                    text: 'USE [W,A,S,D] TO MOVE THE OPERATOR.\nHOLD [SHIFT] TO DASH THROUGH DANGER.',
+                    bubble: { x: 500, y: 400 },
+                    arrow: 'down'
+                },
+                {
+                    trigger: 'near_task',
+                    title: 'TREASURE BOXES',
+                    text: 'GET CLOSE TO A TREASURE BOX TO COLLECT IT.\nWATCH OUT FOR HOSTILE AGENTS!',
+                    bubble: { x: 1500, y: 300 },
+                    arrow: 'down'
+                }
+            ];
+        }
+
+        // Level 1 Foundation
+        return [
             {
                 trigger: 'start',
                 title: 'MOVEMENT',
                 text: 'USE [W,A,S,D] TO MOVE THE OPERATOR.\nHOLD [SHIFT] TO DASH THROUGH DANGER.',
-                bubble: { x: 200, y: 720 }, // Near player spawn
+                bubble: { x: 200, y: 720 },
                 arrow: 'down'
             },
             {
                 trigger: 'near_task',
                 title: 'TERMINALS',
-                text: 'GET CLOSE TO A DATA TERMINAL.\nHOLD [SPACE] OR [E] TO START CHANNELING.',
+                text: 'GET CLOSE TO A DATA TERMINAL.\nPRESS [E] TO START CHANNELING.',
                 bubble: { x: 550, y: 440 },
                 arrow: 'down'
             },
@@ -40,8 +66,6 @@ export class TutorialSystem {
                 arrow: 'down'
             }
         ];
-
-        this.triggered = new Set();
     }
 
     init() {
@@ -58,12 +82,17 @@ export class TutorialSystem {
 
         // Check proximity for 'near_task'
         if (!this.triggered.has('near_task')) {
-            const dist = Phaser.Math.Distance.Between(
-                this.scene.player.x, this.scene.player.y,
-                600, 500 // Terminal Alpha
-            );
-            if (dist < 150) {
-                this.showHint('near_task');
+            // Find nearest task to trigger instead of hardcoded coordinates
+            const tasks = this.scene.matchManager?.taskSystem?.getAllTasks() || [];
+            if (tasks.length > 0) {
+                const nearest = tasks[0];
+                const dist = Phaser.Math.Distance.Between(
+                    this.scene.player.x, this.scene.player.y,
+                    nearest.position.x, nearest.position.y
+                );
+                if (dist < 200) {
+                    this.showHint('near_task');
+                }
             }
         }
     }

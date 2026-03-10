@@ -12,9 +12,9 @@ export class VictoryScene extends (Phaser ? Phaser.Scene : Object) {
     }
 
     init(data) {
-        this.level = data.level || 1;
-        this.stage = data.stage || 1;
-        this.results = data.results || null;
+        this.results = data.results || {};
+        this.level = data.level ?? 1;
+        this.stage = data.stage ?? 1;
         this.endReason = data.endReason || 'victory';
         this.matchStats = data.matchStats || {};
     }

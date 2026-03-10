@@ -21,6 +21,8 @@ export async function initGame(container, launchOptions = {}) {
     const Phaser = await import("phaser");
     const { GameScene } = await import("./scenes/GameScene");
     const { GameHUD } = await import("./scenes/GameHUD");
+    const { TrainingGroundScene } = await import("./scenes/TrainingGroundScene");
+    const { GameMap } = await import("./scenes/GameMap"); // Map Scene
     const { VictoryScene } = await import("./scenes/VictoryScene");
     const { GameOverScene } = await import("./scenes/GameOverScene");
     const { PauseScene } = await import("./scenes/PauseScene");
@@ -35,8 +37,8 @@ export async function initGame(container, launchOptions = {}) {
         // ── DIRECT LAUNCH ──
         // Create a minimal inline boot scene that goes straight to DeploymentLoadingScene.
         // No BootScene, no PreloadScene, no MainMenuScene — impossible to show menus.
-        const lvl = launchOptions.level || 1;
-        const stg = launchOptions.stage || 1;
+        const lvl = launchOptions.level ?? 1;
+        const stg = launchOptions.stage ?? 1;
 
         class DirectBootScene extends Phaser.Scene {
             constructor() { super({ key: 'DirectBootScene' }); }
@@ -53,7 +55,11 @@ export async function initGame(container, launchOptions = {}) {
                 g.destroy();
 
                 // Go straight to gameplay — no menus at all
-                this.scene.start('DeploymentLoadingScene', { level: lvl, stage: stg });
+                if (launchOptions.trainingMode) {
+                    this.scene.start('TrainingGroundScene');
+                } else {
+                    this.scene.start('DeploymentLoadingScene', { level: lvl, stage: stg });
+                }
             }
             _genTex(key, w, h, color) {
                 const g = this.add.graphics();
@@ -67,8 +73,10 @@ export async function initGame(container, launchOptions = {}) {
         scenes = [
             DirectBootScene,
             DeploymentLoadingScene,
+            TrainingGroundScene,
             GameScene,
             GameHUD,
+            GameMap,           // Map Scene
             PauseScene,
             GameOverScene,
             VictoryScene,
@@ -89,8 +97,10 @@ export async function initGame(container, launchOptions = {}) {
             MainMenuScene,
             LevelSelectScene,
             BriefingScene,
+            TrainingGroundScene,
             GameScene,
             GameHUD,
+            GameMap,           // Map Scene
             PauseScene,
             GameOverScene,
             VictoryScene,

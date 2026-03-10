@@ -24,6 +24,7 @@ export class GamePlayer extends BaseSurvivor {
         this.stamina = 100;
         this.maxStamina = 100;
         this.staminaRegen = 12; // per second
+        this.healthKits = 0;
 
         // Combat
         this.attackCooldown = 0;
@@ -35,6 +36,10 @@ export class GamePlayer extends BaseSurvivor {
         this.dashDuration = 0;
         this.dashSpeed = 600;
         this.isDashing = false;
+
+        // Vehicles
+        this.isDriving = false;
+        this.drivenCar = null;
     }
 
     // ─── DAMAGE ─────────────────────────────────────────
@@ -117,6 +122,46 @@ export class GamePlayer extends BaseSurvivor {
         }
     }
 
+    // ─── CAR INTERACTION ────────────────────────────────
+
+    enterCar(carData) {
+        this.isDriving = true;
+        this.drivenCar = carData;
+        carData.isDriven = true;
+
+        // Hide player, move to car center
+        this.visuals.setVisible(false);
+        this.x = carData.x;
+        this.y = carData.y;
+
+        // Remove car's own obstacle so player inside can move
+        const idx = this.scene.worldObstacles.indexOf(carData.obstacle);
+        if (idx !== -1) {
+            this.scene.worldObstacles.splice(idx, 1);
+        }
+        carData.promptText.setAlpha(0); // hide [E] RIDE
+    }
+
+    exitCar() {
+        if (!this.isDriving || !this.drivenCar) return;
+
+        this.isDriving = false;
+        this.visuals.setVisible(true);
+        this.drivenCar.isDriven = false;
+
+        // Pop player out slightly to side
+        this.x += 40;
+
+        // Re-enable hitboxes
+        this.drivenCar.x = this.x - 40;
+        this.drivenCar.y = this.y;
+        this.drivenCar.obstacle.x = this.drivenCar.x;
+        this.drivenCar.obstacle.y = this.drivenCar.y;
+        this.scene.worldObstacles.push(this.drivenCar.obstacle);
+
+        this.drivenCar = null;
+    }
+
     // ─── UPDATE LOOP ────────────────────────────────────
 
     update(dt) {
@@ -149,13 +194,64 @@ export class GamePlayer extends BaseSurvivor {
         // ─ Normal movement ─
         if (vx !== 0 || vy !== 0) {
             const length = Math.sqrt(vx * vx + vy * vy);
-            const currentSpeed = this.stamina <= 0 ? this.speed * 0.7 : this.speed;
-            this.x += (vx / length) * currentSpeed * dt;
-            this.y += (vy / length) * currentSpeed * dt;
+            const currentSpeed = this.isDriving ? 800 : (this.stamina <= 0 ? this.speed * 0.7 : this.speed);
+
+            let newX = this.x + (vx / length) * currentSpeed * dt;
+            let newY = this.y + (vy / length) * currentSpeed * dt;
+
+            // Simple Axis-Aligned Bounding Box Collision
+            if (this.scene.worldObstacles) {
+                const pW = this.isDriving ? 40 : 16;
+                const pH = this.isDriving ? 40 : 16;
+
+                for (const obs of this.scene.worldObstacles) {
+                    if (obs.x === undefined || obs.w === undefined) continue;
+
+                    // AABB Collision check
+                    if (Math.abs(newX - obs.x) < (pW + obs.w) / 2 && Math.abs(newY - obs.y) < (pH + obs.h) / 2) {
+                        // Slide along X if possible
+                        if (Math.abs(this.x - obs.x) >= (pW + obs.w) / 2) {
+                            newX = this.x;
+                        }
+                        // Slide along Y if possible
+                        else if (Math.abs(this.y - obs.y) >= (pH + obs.h) / 2) {
+                            newY = this.y;
+                        } else {
+                            newX = this.x;
+                            newY = this.y;
+                        }
+                    }
+                }
+            }
+
+            this.x = newX;
+            this.y = newY;
             this.logic.position = { x: this.x, y: this.y };
 
-            // Flip character visual based on direction
-            this.visuals.scaleX = vx < 0 ? -1 : 1;
+            // Movement Sounds
+            this.lastStepTime = this.lastStepTime || 0;
+            if (this.scene.time.now - this.lastStepTime > (this.isDriving ? 150 : 300)) {
+                this.lastStepTime = this.scene.time.now;
+                if (this.isDriving) {
+                    SoundManager.carEngine();
+                } else {
+                    // Check if running (just example logic, or standard walk)
+                    if (currentSpeed > this.speed) SoundManager.run();
+                    else SoundManager.walk();
+                }
+            }
+
+            if (this.isDriving) {
+                // Update car visuals
+                this.drivenCar.angle = Math.atan2(vy, vx) * (180 / Math.PI);
+                this.drivenCar.container.setAngle(this.drivenCar.angle);
+                this.drivenCar.x = this.x;
+                this.drivenCar.y = this.y;
+                this.drivenCar.container.setPosition(this.x, this.y);
+            } else {
+                // Flip character visual based on direction
+                this.visuals.scaleX = vx < 0 ? -1 : 1;
+            }
         }
 
         // ─ Stamina regen ─
