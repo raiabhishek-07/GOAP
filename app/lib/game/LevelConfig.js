@@ -723,7 +723,7 @@ export const MIND_ARENA_LEVELS = {
     // LEVEL 0: TRAINING — "The Training Ground"
     // ════════════════════════════════════════════════════════
     0: {
-        name: 'Training Ground',
+        name: 'INITIATION PROTOCOL',
         subtitle: 'Tactical Orientation',
         description: 'A zero-risk simulation environment to master movement, weapons, and vehicles.',
         color: '#f97316',
@@ -734,7 +734,7 @@ export const MIND_ARENA_LEVELS = {
                 name: 'Standard Drills',
                 subtitle: 'Combat Orientation',
                 objective: 'Collect all 3 Treasure Boxes while surviving hostile GOAP agents.',
-                description: 'Welcome to the MindArena Training Ground. GOAP Agents are actively planning to eliminate you and steal the objectives. Adapt and survive.',
+                description: 'Welcome to the INITIATION PROTOCOL. GOAP Agents are actively planning to eliminate you and steal the objectives. Adapt and survive.',
                 timeLimit: 600,
                 difficulty: 2,
                 showTutorial: true,

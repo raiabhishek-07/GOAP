@@ -63,7 +63,7 @@ export class TrainingGroundScene extends (Phaser ? Phaser.Scene : Object) {
 
         // Initial Guide
         this.time.delayedCall(1000, () => {
-            this.hintSystem.showHint("TRAINING GROUND: Find 3 Treasure Boxes using WASD. Press E to collect.", 640, 200);
+            this.hintSystem.showHint("INITIATION PROTOCOL: Find 3 Treasure Boxes using WASD. Press E to collect.", 640, 200);
         });
     }
 

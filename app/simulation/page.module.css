@@ -33,43 +33,6 @@
     text-transform: uppercase;
 }
 
-.viewToggle {
-    display: flex;
-    background: rgba(26, 26, 46, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 100px;
-    padding: 3px;
-    gap: 2px;
-}
-
-.toggleBtn {
-    padding: 4px 12px;
-    border-radius: 100px;
-    border: none;
-    background: none;
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.toggleBtn:hover {
-    color: var(--text-primary);
-}
-
-.toggleActive {
-    background: rgba(0, 212, 255, 0.15);
-    color: var(--accent-cyan);
-    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.1);
-}
-
-.toggleActiveHighlight {
-    background: rgba(255, 255, 255, 0.1);
-    color: #f59e0b;
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
-}
-
 .header h1 {
     font-size: 2.4rem;
     font-weight: 700;
