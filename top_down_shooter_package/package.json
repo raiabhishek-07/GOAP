@@ -1,0 +1,11 @@
+{
+  "name": "tactical-top-down-shooter",
+  "version": "1.0.0",
+  "description": "Premium top-down tactical shooter component for Next.js",
+  "main": "TopDownShooter.js",
+  "dependencies": {
+    "phaser": "^3.60.0"
+  },
+  "author": "Antigravity",
+  "license": "MIT"
+}

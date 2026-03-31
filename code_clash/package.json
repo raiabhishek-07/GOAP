@@ -1,0 +1,11 @@
+{
+  "name": "code-clash-learning",
+  "version": "1.0.0",
+  "description": "An educational game to learn programming logic through top-down combat and treasure hunting.",
+  "main": "CodeClash.js",
+  "dependencies": {
+    "phaser": "^3.60.0"
+  },
+  "author": "Antigravity",
+  "license": "MIT"
+}

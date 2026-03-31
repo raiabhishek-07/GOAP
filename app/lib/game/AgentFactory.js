@@ -9,7 +9,7 @@ import { AGENT_TYPE, AGENT_META } from './LevelConfig.js';
 import {
     AgentBelief, AgentAction, AgentGoal,
     CountdownTimer, IdleStrategy, MoveStrategy,
-    WanderStrategy, AttackStrategy, GoapPlanner,
+    WanderStrategy, AttackStrategy, HealStrategy, FleeAndHealStrategy, GoapPlanner,
 } from '../goap/engine.js';
 
 // ─── TACTICAL AGENT (base for all 7 types) ──────────────────
@@ -103,8 +103,9 @@ export class TacticalAgent extends BaseSurvivor {
     /**
      * Initialize GOAP beliefs, actions, and goals per agent type
      */
-    initGOAP(locations) {
+    initGOAP(locations, obstacles = []) {
         this.locations = locations;
+        this.obstacles = obstacles;
         this._setupBeliefs();
         this._setupActions();
         this._setupGoals();
@@ -131,8 +132,8 @@ export class TacticalAgent extends BaseSurvivor {
             if (!this.playerTarget) return false;
             return this._distTo(this.playerTarget.position) < this.attackRange;
         });
-        b('AttackingPlayer', () => false);
-        b('HealthLow', () => this.health < 30);
+        b('HealthLow', () => this.health < 50);
+        b('SquadHasIntel', () => this.matchManager?.squadIntel?.playerSpotted === true);
 
         // Location beliefs
         if (this.locations.foodShack) {
@@ -140,10 +141,13 @@ export class TacticalAgent extends BaseSurvivor {
         }
 
         b('AtHome', () => {
-            if (!this.locations.home) return false;
-            return this._distTo(this.locations.home) < 40;
+            // Must be at the safe point AND the player must not be too close
+            const home = this.locations?.home || this.locations?.restArea || { x: this.spawnX, y: this.spawnY };
+            const atHomePos = this._distTo(home) < 40;
+            const safeFromPlayer = !this.playerTarget || this._distTo(this.playerTarget.position) > 250;
+            return atHomePos && safeFromPlayer;
         });
-        b('IsHealthy', () => this.health >= 80);
+        b('IsHealthy', () => this.health >= 95);
 
         // Patrol beliefs
         if (this.patrolPath.length > 0) {
@@ -192,36 +196,36 @@ export class TacticalAgent extends BaseSurvivor {
                 .build()
         );
 
-        // ── UNIVERSAL: Survival ──
-        if (this.locations.home) {
-            this.actions.add(
-                AgentAction.builder('Move to Home')
-                    .withStrategy(new MoveStrategy(this, () => this.locations.home))
-                    .addEffect(this.beliefs.AtHome)
-                    .build()
-            );
+        // ── UNIVERSAL: Survival (Hide and Heal) ──
+        const findSafePoint = () => {
+            // Priority: Rest Area -> Home -> Spawn Point
+            return this.locations?.restArea || this.locations?.home || { x: this.spawnX, y: this.spawnY };
+        };
+        
+        this.actions.add(
+            AgentAction.builder('Move to Safe Place')
+                .withStrategy(new MoveStrategy(this, findSafePoint))
+                .addEffect(this.beliefs.AtHome)
+                .build()
+        );
 
-            this.actions.add(
-                AgentAction.builder('Heal')
-                    .withStrategy({
-                        canPerform: () => true,
-                        start: () => { this._healTimer = 0; },
-                        update: (dt) => {
-                            this._healTimer += dt;
-                            if (this._healTimer >= 3.0) { // 3 seconds healing
-                                this.health = this.maxHealth;
-                                return true;
-                            }
-                            return false;
-                        },
-                        stop: () => { },
-                        complete: () => this._healTimer >= 3.0
-                    })
-                    .addPrecondition(this.beliefs.AtHome)
-                    .addEffect(this.beliefs.IsHealthy)
-                    .build()
-            );
-        }
+        this.actions.add(
+            AgentAction.builder('Scamper and Recover')
+                .withStrategy(new FleeAndHealStrategy(this, () => this.playerTarget?.position, this.obstacles, 4, 450))
+                .addPrecondition(this.beliefs.PlayerInChaseRange)
+                .addEffect(this.beliefs.IsHealthy)
+                .withCost(1) // Very cheap, prefer this if seen!
+                .build()
+        );
+
+        this.actions.add(
+            AgentAction.builder('Heal Self')
+                .withStrategy(new HealStrategy(this, 10)) // Faster heal if safe at home
+                .addPrecondition(this.beliefs.AtHome)
+                .addEffect(this.beliefs.IsHealthy)
+                .withCost(5) // Backup option
+                .build()
+        );
 
         // ── TYPE-SPECIFIC ACTIONS ──
 
@@ -229,34 +233,36 @@ export class TacticalAgent extends BaseSurvivor {
             this._addPatrolActions();
         }
 
-        if (type === AGENT_TYPE.STALKER) {
+        const canHunt = [AGENT_TYPE.STALKER, AGENT_TYPE.DEFENDER, AGENT_TYPE.AMBUSHER, AGENT_TYPE.STRATEGIST, AGENT_TYPE.MASTERMIND].includes(type);
+
+        if (canHunt) {
             this._addChaseActions();
+            
+            // Hive-Mind Intercept (Shared squad intel)
+            this.actions.add(
+                AgentAction.builder('Intercept Player Position')
+                    .withStrategy(new MoveStrategy(this, () => this.matchManager?.squadIntel?.lastKnownPlayerPos))
+                    .addPrecondition(this.beliefs.SquadHasIntel)
+                    .addEffect(this.beliefs.PlayerInChaseRange)
+                    .withCost(4) // Higher cost than direct chase
+                    .build()
+            );
         }
 
-        if (type === AGENT_TYPE.RACER) {
+        if (type === AGENT_TYPE.RACER || type === AGENT_TYPE.STRATEGIST || type === AGENT_TYPE.MASTERMIND) {
             this._addTaskRacingActions();
         }
 
-        if (type === AGENT_TYPE.DEFENDER) {
+        if (type === AGENT_TYPE.DEFENDER || type === AGENT_TYPE.MASTERMIND) {
             this._addGuardActions();
-            this._addChaseActions(); // Chase if player gets close
         }
 
-        if (type === AGENT_TYPE.AMBUSHER) {
+        if (type === AGENT_TYPE.AMBUSHER || type === AGENT_TYPE.MASTERMIND) {
             this._addAmbushActions();
-            this._addChaseActions();
-        }
-
-        if (type === AGENT_TYPE.STRATEGIST) {
-            this._addTaskRacingActions();
-            this._addChaseActions();
         }
 
         if (type === AGENT_TYPE.MASTERMIND) {
             this._addPatrolActions();
-            this._addChaseActions();
-            this._addTaskRacingActions();
-            this._addGuardActions();
         }
     }
 
@@ -462,10 +468,16 @@ export class TacticalAgent extends BaseSurvivor {
             AgentGoal.builder('Idle').withPriority(1).withDesiredEffect(this.beliefs.Nothing).build()
         );
 
-        if (type !== AGENT_TYPE.TRAINING_DUMMY && type !== AGENT_TYPE.PATROL) {
+        // Universal Survival Goal
+        if (type !== AGENT_TYPE.TRAINING_DUMMY) {
             this.goals.add(
-                AgentGoal.builder('Survive').withPriority(() => this.health < 30 ? 6 : 0)
-                    .withDesiredEffect(this.beliefs.IsHealthy).build()
+                AgentGoal.builder('Survive').withPriority(() => {
+                    // Trigger retreat at 50, but STAY in retreat mode until 95%
+                    if (this.health < 50) return 25;
+                    if (this.health < 95 && this.currentGoal?.name === 'Survive') return 25;
+                    return 0;
+                })
+                .withDesiredEffect(this.beliefs.IsHealthy).build()
             );
         }
 
@@ -574,6 +586,11 @@ export class TacticalAgent extends BaseSurvivor {
     // ─── UPDATE LOOP ──────────────────────────────────
 
     update(dt) {
+        // Broadcast sightings to squad hive-mind
+        if (this.beliefs.PlayerInChaseRange?.evaluate()) {
+            this.matchManager?.updateSquadIntel(this.playerTarget.position);
+        }
+
         // Update plan timer
         this.planTimer.tick(dt);
         if (this.planTimer.isFinished) {
@@ -777,7 +794,7 @@ function _bodyFromType(type) {
  * @param {object} playerTarget - Player entity for chase/attack
  * @returns {TacticalAgent[]}
  */
-export function createAgentsForStage(scene, stageConfig, matchManager, playerTarget) {
+export function createAgentsForStage(scene, stageConfig, matchManager, playerTarget, obstacles = []) {
     const agents = [];
 
     if (!stageConfig?.agents) return agents;
@@ -786,7 +803,7 @@ export function createAgentsForStage(scene, stageConfig, matchManager, playerTar
         const agent = new TacticalAgent(scene, agentConfig.spawn.x, agentConfig.spawn.y, agentConfig);
         agent.setPlayerTarget(playerTarget);
         agent.setMatchManager(matchManager);
-        agent.initGOAP(stageConfig.locations || {});
+        agent.initGOAP(stageConfig.locations || {}, obstacles);
         agent.setDepth(40);
         agents.push(agent);
     }

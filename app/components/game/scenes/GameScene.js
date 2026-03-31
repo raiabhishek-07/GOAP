@@ -753,6 +753,7 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
                 this.levelConfig,
                 this.matchManager,
                 this.player.logic, // PlayerEntity for chase targeting
+                this.worldObstacles || []
             );
         } catch (err) {
             console.error('AgentFactory error:', err);

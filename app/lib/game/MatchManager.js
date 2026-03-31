@@ -60,6 +60,13 @@ export class MatchManager {
         this.powerCollected = 0;
         this.lastPlayerPos = null;
 
+        // Squad Intelligence (Hive Mind)
+        this.squadIntel = {
+            playerSpotted: false,
+            lastKnownPlayerPos: null,
+            spottedTimer: 0, // Age of the intel
+        };
+
         // Results
         this.endReason = null;
         this.results = null;
@@ -145,6 +152,15 @@ export class MatchManager {
 
         // Update match timer
         this.matchDuration += dt;
+
+        // Update Hive Mind (Squad Intel)
+        if (this.squadIntel.playerSpotted) {
+            this.squadIntel.spottedTimer += dt;
+            // After 5 seconds of not seeing the player, intel goes cold
+            if (this.squadIntel.spottedTimer > 5.0) {
+                this.squadIntel.playerSpotted = false;
+            }
+        }
 
         // Track distance
         if (playerData.position && this.lastPlayerPos) {
@@ -235,6 +251,15 @@ export class MatchManager {
      */
     recordPower(amount) {
         this.powerCollected += amount;
+    }
+
+    /**
+     * Update Hive Mind Intel
+     */
+    updateSquadIntel(pos) {
+        this.squadIntel.playerSpotted = true;
+        this.squadIntel.lastKnownPlayerPos = { x: pos.x, y: pos.y };
+        this.squadIntel.spottedTimer = 0;
     }
 
     /**

@@ -47,6 +47,53 @@ export class CountdownTimer {
     }
 }
 
+// ---- PriorityQueue Utility (for A* search) ----
+class PriorityQueue {
+    constructor(comparator = (a, b) => a - b) {
+        this.heap = [];
+        this.comparator = comparator;
+    }
+    push(item) {
+        this.heap.push(item);
+        this.siftUp();
+    }
+    pop() {
+        if (this.size() === 0) return null;
+        const top = this.heap[0];
+        const last = this.heap.pop();
+        if (this.size() > 0) {
+            this.heap[0] = last;
+            this.siftDown();
+        }
+        return top;
+    }
+    size() { return this.heap.length; }
+    siftUp() {
+        let index = this.heap.length - 1;
+        while (index > 0) {
+            const parent = Math.floor((index - 1) / 2);
+            if (this.comparator(this.heap[index], this.heap[parent]) < 0) {
+                [this.heap[index], this.heap[parent]] = [this.heap[parent], this.heap[index]];
+                index = parent;
+            } else break;
+        }
+    }
+    siftDown() {
+        let index = 0;
+        while (true) {
+            const left = 2 * index + 1;
+            const right = 2 * index + 2;
+            let smallest = index;
+            if (left < this.heap.length && this.comparator(this.heap[left], this.heap[smallest]) < 0) smallest = left;
+            if (right < this.heap.length && this.comparator(this.heap[right], this.heap[smallest]) < 0) smallest = right;
+            if (smallest !== index) {
+                [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
+                index = smallest;
+            } else break;
+        }
+    }
+}
+
 // ---- AgentBelief (from Beliefs.cs) ----
 export class AgentBelief {
     constructor(name) {
@@ -230,18 +277,18 @@ class AgentGoalBuilder {
     }
 }
 
-// ---- Planner Node (from GoapPlanner.cs) ----
+// ---- Planner Node (Architected for A*) ----
 class PlannerNode {
-    constructor(parent, action, requiredEffects, cost) {
-        this.parent = parent;
+    constructor(action, unsatisfiedPreconditions, parent = null, gCost = 0) {
         this.action = action;
-        this.requiredEffects = new Set(requiredEffects);
-        this.leaves = [];
-        this.cost = cost;
+        this.unsatisfiedPreconditions = new Set(unsatisfiedPreconditions);
+        this.parent = parent;
+        this.gCost = gCost; // Total cost from goal to here
+        this.hCost = this.unsatisfiedPreconditions.size; // Heuristic: number of unsatisfied requirements
     }
 
-    get isLeafDead() {
-        return this.leaves.length === 0 && this.action === null;
+    get fCost() {
+        return this.gCost + this.hCost;
     }
 }
 
@@ -254,94 +301,94 @@ export class ActionPlan {
     }
 }
 
-// ---- GoapPlanner (from GoapPlanner.cs) ----
+// ---- GoapPlanner (Refactored for A* Search) ----
 export class GoapPlanner {
     plan(agent, goals, mostRecentGoal = null) {
         if (!goals) return null;
 
-        // Convert to array and check length/size
         const goalsList = goals instanceof Set ? [...goals] : (Array.isArray(goals) ? goals : [goals]);
         if (goalsList.length === 0) return null;
 
-        // Order goals by priority, descending
         const orderedGoals = goalsList
             .filter(g => {
                 if (!g || !g.desiredEffects) return false;
-                // Only plan for goals that aren't already satisfied
                 return [...g.desiredEffects].some(b => b && !b.evaluate());
             })
             .sort((a, b) => {
                 const getP = (g) => {
-                    const base = typeof g.priority === 'function' ? g.priority() : (g.priority || 0);
+                    const base = g.priority;
                     return g === mostRecentGoal ? base - 0.01 : base;
                 };
                 return getP(b) - getP(a);
             });
 
         for (const goal of orderedGoals) {
-            const goalNode = new PlannerNode(null, null, goal.desiredEffects, 0);
+            const plan = this._search(agent, goal);
+            if (plan) return plan;
+        }
 
-            if (this._findPath(goalNode, agent.actions)) {
-                if (goalNode.isLeafDead) continue;
+        return null;
+    }
 
-                const actionStack = [];
-                let current = goalNode;
-                while (current.leaves.length > 0) {
-                    const cheapestLeaf = current.leaves.reduce((min, leaf) =>
-                        leaf.cost < min.cost ? leaf : min
-                    );
-                    current = cheapestLeaf;
-                    actionStack.push(cheapestLeaf.action);
+    _search(agent, goal) {
+        const openSet = new PriorityQueue((a, b) => a.fCost - b.fCost);
+        
+        // Root node: Start with the goal's requirements
+        const rootRequirements = new Set();
+        for (const e of goal.desiredEffects) {
+            if (!e.evaluate()) rootRequirements.add(e);
+        }
+
+        openSet.push(new PlannerNode(null, rootRequirements));
+
+        while (openSet.size() > 0) {
+            const current = openSet.pop();
+
+            // If no unsatisfied preconditions, we found the path to current beliefs
+            if (current.unsatisfiedPreconditions.size === 0) {
+                return this._buildActionPlan(goal, current);
+            }
+
+            // A* Neighbors: Actions that satisfy any of the current unsatisfied preconditions
+            for (const action of agent.actions) {
+                // Check if this action satisfies at least one requirement
+                const satisfiesSomething = [...action.effects].some(e => current.unsatisfiedPreconditions.has(e));
+                
+                if (satisfiesSomething) {
+                    const nextRequirements = new Set(current.unsatisfiedPreconditions);
+                    
+                    // Satisfy what this action provides
+                    for (const e of action.effects) nextRequirements.delete(e);
+                    
+                    // Add this action's preconditions as new requirements (if not already true)
+                    for (const p of action.preconditions) {
+                        if (!p.evaluate()) nextRequirements.add(p);
+                    }
+
+                    const newNode = new PlannerNode(action, nextRequirements, current, current.gCost + action.cost);
+                    openSet.push(newNode);
                 }
-
-                return new ActionPlan(goal, actionStack, current.cost);
             }
         }
 
         return null;
     }
 
-    _findPath(parent, actions) {
-        const orderedActions = [...actions].sort((a, b) => a.cost - b.cost);
+    _buildActionPlan(goal, node) {
+        const actions = [];
+        let totalCost = node.gCost;
+        let current = node;
 
-        for (const action of orderedActions) {
-            // WORK ON A COPY to avoid mutating the original goal/parent effects
-            const requiredEffects = new Set(parent.requiredEffects);
-
-            // Remove effects that already evaluate to true
-            for (const b of [...requiredEffects]) {
-                if (b.evaluate()) requiredEffects.delete(b);
-            }
-
-            if (requiredEffects.size === 0) return true;
-
-            // Check if this action's effects satisfy any required effects
-            const hasMatchingEffect = [...action.effects].some(e => requiredEffects.has(e));
-
-            if (hasMatchingEffect) {
-                const newRequired = new Set(requiredEffects);
-                for (const e of action.effects) newRequired.delete(e);
-                for (const p of action.preconditions) newRequired.add(p);
-
-                const newAvailable = new Set(actions);
-                newAvailable.delete(action);
-
-                const newNode = new PlannerNode(parent, action, newRequired, parent.cost + action.cost);
-
-                if (this._findPath(newNode, newAvailable)) {
-                    parent.leaves.push(newNode);
-                    for (const p of newNode.action.preconditions) {
-                        newRequired.delete(p);
-                    }
-                }
-
-                if (newRequired.size === 0) return true;
-            }
+        // Path is built goal-to-start, so we walk up parents to get start-to-goal
+        while (current.parent !== null) {
+            actions.unshift(current.action);
+            current = current.parent;
         }
 
-        return parent.leaves.length > 0;
+        return new ActionPlan(goal, actions, totalCost);
     }
 }
+
 
 // ---- Action Strategies (from Strategies.cs) — 2D versions ----
 
@@ -457,6 +504,100 @@ export class AttackStrategy {
     }
 
     stop() { }
+}
+
+export class HealStrategy {
+    constructor(agent, healRate = 5) {
+        this.agent = agent;
+        this.healRate = healRate; // Health per second
+        this._complete = false;
+    }
+
+    get canPerform() { return this.agent.health < this.agent.maxHealth; }
+    get complete() { return this._complete; }
+
+    start() {
+        this._complete = false;
+    }
+
+    update(dt) {
+        if (this.agent.health < this.agent.maxHealth) {
+            this.agent.health = Math.min(this.agent.maxHealth, this.agent.health + (this.healRate * dt));
+        } else {
+            this._complete = true;
+        }
+    }
+
+    stop() { }
+}
+
+export class FleeAndHealStrategy {
+    constructor(agent, targetFn, obstacles = [], healRate = 4, fleeDistance = 350) {
+        this.agent = agent;
+        this.targetFn = targetFn;
+        this.obstacles = obstacles; // Array of {x, y, w, h}
+        this.healRate = healRate;
+        this.fleeDistance = fleeDistance;
+        this._destination = null;
+    }
+
+    get canPerform() { return true; }
+    get complete() {
+        if (!this._destination) return true;
+        const dx = this.agent.position.x - this._destination.x;
+        const dy = this.agent.position.y - this._destination.y;
+        const atDest = Math.sqrt(dx * dx + dy * dy) < 20;
+        return atDest || this.agent.health >= 100;
+    }
+
+    start() {
+        const target = this.targetFn();
+        if (!target) return;
+
+        // 🧠 Strategic Cover Algorithm
+        // 1. Find the nearest obstacle that can block LOS to the player
+        let bestCover = null;
+        let bestDist = Infinity;
+
+        for (const obs of this.obstacles) {
+            const dist = Math.sqrt(Math.pow(obs.x - this.agent.position.x, 2) + Math.pow(obs.y - this.agent.position.y, 2));
+            if (dist < bestDist && dist < 600) { // Only consider nearby obstacles
+                bestDist = dist;
+                bestCover = obs;
+            }
+        }
+
+        if (bestCover) {
+            // 2. Calculate "Shadow Point" (opposite side of obstacle from player)
+            const vx = bestCover.x - target.x;
+            const vy = bestCover.y - target.y;
+            const vDist = Math.sqrt(vx * vx + vy * vy) || 1;
+            
+            this._destination = {
+                x: bestCover.x + (vx / vDist) * 40, // Move 40px beyond the obstacle center
+                y: bestCover.y + (vy / vDist) * 40
+            };
+        } else {
+            // 3. Fallback: Pure directional flee
+            const vx = this.agent.position.x - target.x;
+            const vy = this.agent.position.y - target.y;
+            const dist = Math.sqrt(vx * vx + vy * vy) || 1;
+            this._destination = {
+                x: Math.max(100, Math.min(3900, this.agent.position.x + (vx / dist) * this.fleeDistance)),
+                y: Math.max(100, Math.min(2900, this.agent.position.y + (vy / dist) * this.fleeDistance))
+            };
+        }
+
+        this.agent.moveTo(this._destination);
+    }
+
+    update(dt) {
+        if (this.agent.health < 100) {
+            this.agent.health = Math.min(100, this.agent.health + (this.healRate * dt));
+        }
+    }
+
+    stop() { this.agent.stopMoving(); }
 }
 
 // ---- Sensor (from Sensor.cs) — 2D distance-based ----
