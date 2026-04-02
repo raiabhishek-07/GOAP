@@ -54,6 +54,9 @@ export class GameHUD extends (Phaser ? Phaser.Scene : Object) {
         for (let i = 0; i < height; i += 4) scan.fillRect(0, i, width, 1);
         scan.setScrollFactor(0).setDepth(1000).setAlpha(0.2);
 
+        // ─── ABILITY MONITOR ──────────────────────────
+        this.createAbilityHUD(width - 200, 100);
+
         // ─── MAP CONTROLS ─────────────────────────────────
         this.setupMapControls();
 
@@ -146,6 +149,58 @@ export class GameHUD extends (Phaser ? Phaser.Scene : Object) {
             this.minimapContainer.on('pointerdown', () => {
                 this.openMap();
             });
+        }
+    }
+
+    createAbilityHUD(x, y) {
+        const g = this.add.graphics();
+        this.drawTacticalBox(g, x, y, 180, 50, 0x8b5cf6, 0.4);
+        
+        // Cloak Label
+        this.add.text(x + 10, y + 5, 'PHANTOM CLOAK [K]', {
+            fontSize: '9px', fontFamily: 'monospace', color: '#a78bfa'
+        });
+        
+        // Cloak Recharge Bar
+        this.cloakBar = this.add.graphics();
+        
+        // Medkit Label
+        this.add.text(x + 10, y + 25, 'SURVIVAL BAG [H]', {
+            fontSize: '9px', fontFamily: 'monospace', color: '#4ade80'
+        });
+        this.medkitCountText = this.add.text(x + 150, y + 25, 'x0', {
+            fontSize: '11px', fontFamily: 'monospace', color: '#ffffff', fontStyle: 'bold'
+        });
+    }
+
+    update(time, delta) {
+        if (!this.gameScene?.player) return;
+        const player = this.gameScene.player;
+        
+        // Update Cloak Recharge
+        this.cloakBar.clear();
+        
+        // If cloak is active (invisTimer > 0), show it blue/active
+        if (player.isInvisible) {
+            this.cloakBar.fillStyle(0x38bdf8, 1);
+            const progress = (player.invisTimer / 5); 
+            this.cloakBar.fillRect(this.scale.width - 190, 117, 160 * progress, 5);
+        } else {
+            // Otherwise show reboot progress
+            const rebootMax = 20;
+            const current = Math.max(0, rebootMax - player.invisCooldown);
+            const progress = current / rebootMax;
+            
+            this.cloakBar.fillStyle(0x8b5cf6, 0.5); // BG
+            this.cloakBar.fillRect(this.scale.width - 190, 117, 160, 5);
+            
+            this.cloakBar.fillStyle(0x8b5cf6, 1); // Fill
+            this.cloakBar.fillRect(this.scale.width - 190, 117, 160 * progress, 5);
+        }
+        
+        // Update Medkits
+        if (this.medkitCountText) {
+            this.medkitCountText.setText('x' + (player.medKits || 0));
         }
     }
 

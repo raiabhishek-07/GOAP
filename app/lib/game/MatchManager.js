@@ -65,6 +65,7 @@ export class MatchManager {
             playerSpotted: false,
             lastKnownPlayerPos: null,
             spottedTimer: 0, // Age of the intel
+            distressSignal: null // { agentId: string, pos: {x,y}, timestamp: number }
         };
 
         // Results
@@ -161,6 +162,8 @@ export class MatchManager {
                 this.squadIntel.playerSpotted = false;
             }
         }
+        
+        this.checkDistressExpiry();
 
         // Track distance
         if (playerData.position && this.lastPlayerPos) {
@@ -260,6 +263,27 @@ export class MatchManager {
         this.squadIntel.playerSpotted = true;
         this.squadIntel.lastKnownPlayerPos = { x: pos.x, y: pos.y };
         this.squadIntel.spottedTimer = 0;
+    }
+
+    /**
+     * Send distress signal from an agent
+     */
+    sendDistressSignal(agentId, pos) {
+        this.squadIntel.distressSignal = {
+            agentId,
+            pos: { x: pos.x, y: pos.y },
+            timestamp: Date.now()
+        };
+        // This will be read by other agents in their updatePerception()
+    }
+
+    /**
+     * Expire old distress signals
+     */
+    checkDistressExpiry() {
+        if (this.squadIntel.distressSignal && (Date.now() - this.squadIntel.distressSignal.timestamp > 7000)) {
+            this.squadIntel.distressSignal = null;
+        }
     }
 
     /**

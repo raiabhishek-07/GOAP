@@ -641,8 +641,13 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
             const box = this.add.rectangle(0, 0, 16, 12, 0xffffff);
             const cross1 = this.add.rectangle(0, 0, 4, 8, 0xff0000);
             const cross2 = this.add.rectangle(0, 0, 8, 4, 0xff0000);
+            
+            // Pulsating glow
+            const glow = this.add.circle(0, 0, 15, 0x4ade80, 0.2);
+            this.tweens.add({ targets: glow, scale: 1.5, alpha: 0.4, duration: 1000, yoyo: true, repeat: -1 });
+
             const prompt = this.add.text(0, -20, '[E] PICKUP', { fontSize: '10px', color: '#fff' }).setOrigin(0.5).setAlpha(0);
-            hk.add([bg, box, cross1, cross2, prompt]);
+            hk.add([glow, bg, box, cross1, cross2, prompt]);
             hk.setDepth(15);
             this.worldHealthKits.push({
                 active: true,
@@ -755,9 +760,49 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
                 this.player.logic, // PlayerEntity for chase targeting
                 this.worldObstacles || []
             );
+
+            // Listen for tactical shoot and cloning events
+            if (this.enemies) {
+                this.enemies.forEach(agent => {
+                    agent.on('agent_shoot', (target) => this.handleAgentShoot(agent, target));
+                    agent.on('agent_clone', (a) => this.handleAgentClone(a));
+                });
+            }
+
         } catch (err) {
             console.error('AgentFactory error:', err);
             this.enemies = [];
+        }
+    }
+
+    /**
+     * Handle tactical shooting from agents (GOAP Strategies)
+     */
+    handleAgentShoot(agent, target) {
+        if (!agent || !target) return;
+        
+        const dist = Phaser.Math.Distance.Between(agent.x, agent.y, target.x, target.y);
+        const angle = Phaser.Math.Angle.Between(agent.x, agent.y, target.x, target.y);
+        
+        const tracer = this.add.graphics();
+        tracer.lineStyle(1.5, 0xff0000, 0.6);
+        tracer.beginPath();
+        tracer.moveTo(agent.x, agent.y);
+        tracer.lineTo(target.x, target.y);
+        tracer.strokePath();
+        
+        this.tweens.add({
+            targets: tracer,
+            alpha: 0,
+            duration: 100,
+            onComplete: () => tracer.destroy()
+        });
+
+        // Simple damage check for suppression fire
+        const pDist = Phaser.Math.Distance.Between(target.x, target.y, this.player.x, this.player.y);
+        if (pDist < 40) {
+            this.player.takeDamage(2); // Light suppression damage
+            this.matchManager.recordDamage(2);
         }
     }
 
@@ -993,21 +1038,123 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
     // TASK INTERACTION (E key — channeling system)
     // ═══════════════════════════════════════════════════════
 
+    /**
+     * Use a Med-Kit to heal (H key)
+     */
     tryHeal() {
         if (this.player.health >= 100 || this.isChanneling) return;
-        if (!this.player.healthKits || this.player.healthKits <= 0) {
-            UIFactory.createPopup(this, this.player.x, this.player.y - 30, 'NO HEALTH KITS!', '#ef4444', '10px');
+        
+        if (!this.player.medKits || this.player.medKits <= 0) {
+            UIFactory.createPopup(this, this.player.x, this.player.y - 30, 'NO MED-KITS IN BAG!', '#ef4444', '10px');
+            if (this.hudScene?.addLog) this.hudScene.addLog('RECOVERY FAILED: NEED MED-KITS', '#ef4444');
             return;
         }
 
         // Start healing channel
-        SoundManager.heal();
+        if (SoundManager.heal) SoundManager.heal();
         this.isChanneling = true;
         this.channelingTaskId = 'heal';
         this.healProgress = 0;
+        
         if (this.hudScene?.addLog) {
-            this.hudScene.addLog('HEAL CHANNELING [5s]', '#4ade80');
+            this.hudScene.addLog('APPLYING MED-KIT... [1.5s]', '#4ade80');
         }
+    }
+
+    /**
+     * Check Bag (B key)
+     */
+    showInventoryBag() {
+        if (!this.player || !this.hudScene) return;
+        
+        const count = this.player.medKits || 0;
+        const msg = `BAG: [${count}] MEDKITS — [${this.playerGuns.length}] GUNS`;
+        
+        // Show popup and add to log for history
+        UIFactory.createPopup(this, this.player.x, this.player.y - 60, msg, '#fbbf24', '12px');
+        if (this.hudScene.addLog) {
+            this.hudScene.addLog(msg, '#fbbf24');
+        }
+        
+        if (SoundManager.uiClick) SoundManager.uiClick();
+    }
+
+    /**
+     * Activate Invisibility (K key)
+     */
+    tryInvisibility() {
+        if (this.player.invisTimer > 0) return; // Already active
+        
+        // Cooldown check
+        if (this.player.invisCooldown > 0) {
+            UIFactory.createPopup(this, this.player.x, this.player.y - 30, 
+                `STABILIZING STEALTH: ${Math.ceil(this.player.invisCooldown)}s`, '#fbbf24', '10px');
+            return;
+        }
+        
+        // 5s duration / 20s reboot cycle
+        this.player.isInvisible = true;
+        this.player.invisTimer = 5;
+        this.player.invisCooldown = 20; 
+        
+        this.player.visuals.setAlpha(0.2); // Even ghostlier!
+        
+        UIFactory.createPopup(this, this.player.x, this.player.y - 40, 'CLOAK ACTIVE [5s]', '#8b5cf6', '12px');
+        if (this.hudScene?.addLog) this.hudScene.addLog('TACTICAL CLOAK ENGAGED', '#8b5cf6');
+        
+        if (SoundManager.uiTransition) SoundManager.uiTransition();
+    }
+
+    /**
+     * Handle agent cloning (Mitosis)
+     */
+    handleAgentClone(deadAgent) {
+        if (!deadAgent || !this.enemies) return;
+        
+        // Create a new agent at the same spot
+        const cloneConfig = {
+            type: deadAgent.agentType,
+            patrolPath: deadAgent.patrolPath,
+            ambushPoints: deadAgent.ambushPoints,
+            guardTarget: deadAgent.guardTarget,
+            spawnX: deadAgent.x,
+            spawnY: deadAgent.y
+        };
+        
+        // We use the scene reference and config to spawn 
+        // a 50% HP version of the original
+        const clone = new deadAgent.constructor(this, deadAgent.x, deadAgent.y, cloneConfig);
+        clone.initGOAP(deadAgent.locations, deadAgent.obstacles);
+        clone.setPlayerTarget(this.player.logic);
+        clone.setMatchManager(this.matchManager);
+        clone.health = 50; // Clone is slightly weaker
+        clone.hasCloned = true; // Clone cannot clone itself again!
+        
+        // Register events for the new clone
+        clone.on('agent_shoot', (target) => this.handleAgentShoot(clone, target));
+        clone.on('agent_clone', (a) => this.handleAgentClone(a));
+        
+        this.enemies.push(clone);
+        
+            // Visual mitosis effect
+            UIFactory.createPopup(this, deadAgent.x, deadAgent.y - 20, 'MITOSIS!', '#f472b6', '14px');
+            if (this.hudScene?.addLog) this.hudScene.addLog('DEATH TRIGGER: TARGET CLONED', '#f472b6');
+            
+            // SHOCKWAVE EFFECT
+            const circle = this.add.circle(deadAgent.x, deadAgent.y, 10, 0xf472b6, 0.8);
+            this.tweens.add({
+                targets: circle,
+                radius: 100,
+                alpha: 0,
+                duration: 500,
+                onComplete: () => circle.destroy()
+            });
+
+            // FLASH SCREEN SLIGHTLY
+            const flash = this.add.rectangle(0, 0, 4000, 3000, 0xffffff, 0.1);
+            this.tweens.add({ targets: flash, alpha: 0, duration: 200, onComplete: () => flash.destroy() });
+            
+            this.cameras.main.shake(200, 0.005);
     }
 
     tryInteractWithTask() {
@@ -1043,9 +1190,9 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
 
             if (hkIdx !== null) {
                 const hk = this.worldHealthKits[hkIdx];
-                this.player.healthKits = (this.player.healthKits || 0) + 1;
-                UIFactory.createPopup(this, hk.x, hk.y - 20, '+1 HEALTH KIT', '#4ade80');
-                if (this.hudScene?.addLog) this.hudScene.addLog('HEALTH KIT SECURED', '#4ade80');
+                this.player.medKits = (this.player.medKits || 0) + 1;
+                UIFactory.createPopup(this, hk.x, hk.y - 20, '+1 MED-KIT SECURED', '#4ade80');
+                if (this.hudScene?.addLog) this.hudScene.addLog('MED-KIT ADDED TO BAG', '#4ade80');
                 hk.container.destroy();
                 this.worldHealthKits.splice(hkIdx, 1);
                 return;
@@ -1159,13 +1306,13 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
         if (this.isChanneling && this.channelingTaskId) {
             if (this.channelingTaskId === 'heal') {
                 this.healProgress += dt;
-                if (this.healProgress >= 5.0) {
+                if (this.healProgress >= 1.5) { // Faster 1.5 second heal
                     this.isChanneling = false;
                     this.channelingTaskId = null;
                     this.player.health = 100;
-                    this.player.healthKits--;
+                    this.player.medKits--; // Use the kit
                     UIFactory.createPopup(this, this.player.x, this.player.y - 30, 'HEALED FULLY', '#4ade80');
-                    if (this.hudScene?.addLog) this.hudScene.addLog('HEALED COMPLETELY', '#4ade80');
+                    if (this.hudScene?.addLog) this.hudScene.addLog('MED-KIT USED: 100% HEALTH', '#4ade80');
                     if (SoundManager.taskComplete) SoundManager.taskComplete();
                 }
                 return;
@@ -1587,8 +1734,16 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
         this.input.keyboard.on('keydown-E', () => this.tryInteractWithTask());
 
         // Heal (Q key)
-        this.qKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
-        this.input.keyboard.on('keydown-Q', () => this.tryHeal());
+        // Healing (H) - requires Med-Kit
+        this.hKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.H);
+        this.input.keyboard.on('keydown-H', () => this.tryHeal());
+
+        // Bag / Inventory (B)
+        this.bKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+        this.input.keyboard.on('keydown-B', () => this.showInventoryBag());
+
+        // Cloak / Invisibility (K) - Resolved conflict with 'I'
+        this.input.keyboard.on('keydown-K', () => this.tryInvisibility());
 
         // Reload (R key)
         this.input.keyboard.on('keydown-R', () => this.reloadWeapon());
@@ -1728,7 +1883,20 @@ export class GameScene extends (Phaser ? Phaser.Scene : Object) {
 
         // ── PLAYER ──
         if (!this.inputFrozen) {
-            this.player.update(dt);
+            // ─ Abilities & Recharge ─
+        if (this.player.isInvisible) {
+            this.player.invisTimer -= dt;
+            if (this.player.invisTimer <= 0) {
+                this.player.isInvisible = false;
+                this.player.visuals.setAlpha(1);
+                UIFactory.createPopup(this, this.player.x, this.player.y - 30, 'CLOAK REBOOTING', '#fbbf24');
+                if (this.hudScene?.addLog) this.hudScene.addLog('RECHARGING CLOAK CORE...', '#fbbf24');
+            }
+        } else if (this.player.invisCooldown > 0) {
+            this.player.invisCooldown -= dt;
+        }
+        
+        this.player.update(dt);
             if (this.player.attackCooldown > 0) this.player.attackCooldown -= dt;
 
             // Clamp player

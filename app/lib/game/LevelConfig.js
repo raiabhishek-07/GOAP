@@ -134,6 +134,9 @@ export const MIND_ARENA_LEVELS = {
 
                 agents: [
                     { type: AGENT_TYPE.STALKER, spawn: { x: 1800, y: 400 } },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 500, y: 400 }, guardTarget: 'term_alpha' },
+                    { type: AGENT_TYPE.AMBUSHER, spawn: { x: 1400, y: 700 }, ambushPoints: [{ x: 1300, y: 600 }, { x: 1500, y: 800 }] },
+                    { type: AGENT_TYPE.PATROL, spawn: { x: 800, y: 300 } },
                 ],
 
                 tasks: [
@@ -169,6 +172,7 @@ export const MIND_ARENA_LEVELS = {
                     restArea: { x: 2000, y: 1000 },
                     doorOne: { x: 700, y: 500 },
                     doorTwo: { x: 1500, y: 600 },
+                    healthKits: [{ x: 400, y: 800 }, { x: 800, y: 400 }, { x: 1200, y: 300 }, { x: 1500, y: 1100 }, { x: 200, y: 400 }, { x: 1900, y: 1300 }]
                 },
 
                 tips: [
@@ -193,7 +197,10 @@ export const MIND_ARENA_LEVELS = {
 
                 agents: [
                     { type: AGENT_TYPE.STALKER, spawn: { x: 1000, y: 300 } },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 1200, y: 500 } },
                     { type: AGENT_TYPE.RACER, spawn: { x: 2000, y: 1000 } },
+                    { type: AGENT_TYPE.RACER, spawn: { x: 1800, y: 800 } },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1200, y: 700 }, guardTarget: 'crunch_2' },
                 ],
 
                 tasks: [
@@ -226,6 +233,7 @@ export const MIND_ARENA_LEVELS = {
                     restArea: { x: 1600, y: 1300 },
                     doorOne: { x: 800, y: 800 },
                     doorTwo: { x: 1400, y: 400 },
+                    healthKits: [{ x: 300, y: 1100 }, { x: 800, y: 1200 }, { x: 1200, y: 600 }, { x: 1800, y: 400 }, { x: 500, y: 500 }, { x: 2000, y: 1300 }]
                 },
 
                 tips: [
@@ -263,7 +271,11 @@ export const MIND_ARENA_LEVELS = {
 
                 agents: [
                     { type: AGENT_TYPE.STALKER, spawn: { x: 1600, y: 300 } },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 1400, y: 400 } },
                     { type: AGENT_TYPE.RACER, spawn: { x: 2000, y: 1200 } },
+                    { type: AGENT_TYPE.RACER, spawn: { x: 2100, y: 1000 } },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1200, y: 750 }, guardTarget: 'zone_center' },
+                    { type: AGENT_TYPE.AMBUSHER, spawn: { x: 500, y: 300 }, ambushPoints: [{ x: 400, y: 200 }, { x: 600, y: 400 }] },
                 ],
 
                 tasks: [
@@ -304,6 +316,7 @@ export const MIND_ARENA_LEVELS = {
                     restArea: { x: 1900, y: 900 },
                     doorOne: { x: 900, y: 600 },
                     doorTwo: { x: 1500, y: 900 },
+                    healthKits: [{ x: 400, y: 300 }, { x: 1100, y: 700 }, { x: 1700, y: 1200 }, { x: 600, y: 200 }, { x: 1200, y: 800 }, { x: 1800, y: 1100 }, { x: 2100, y: 800 }, { x: 300, y: 900 }]
                 },
 
                 tips: [
@@ -328,8 +341,12 @@ export const MIND_ARENA_LEVELS = {
 
                 agents: [
                     { type: AGENT_TYPE.STALKER, spawn: { x: 800, y: 300 } },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 600, y: 400 } },
                     { type: AGENT_TYPE.RACER, spawn: { x: 2000, y: 600 } },
-                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1200, y: 800 }, guardTarget: 'valuables' },
+                    { type: AGENT_TYPE.RACER, spawn: { x: 1800, y: 700 } },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1200, y: 800 }, guardTarget: 'war_door' },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1900, y: 1000 }, guardTarget: 'war_intel' },
+                    { type: AGENT_TYPE.AMBUSHER, spawn: { x: 500, y: 500 }, ambushPoints: [{ x: 400, y: 400 }, { x: 600, y: 600 }] },
                 ],
 
                 tasks: [
@@ -371,6 +388,7 @@ export const MIND_ARENA_LEVELS = {
                     restArea: { x: 1700, y: 1300 },
                     doorOne: { x: 700, y: 700 },
                     doorTwo: { x: 1400, y: 600 },
+                    healthKits: [{ x: 500, y: 600 }, { x: 1300, y: 800 }, { x: 1800, y: 400 }, { x: 1000, y: 1100 }, { x: 300, y: 300 }, { x: 2000, y: 1100 }, { x: 700, y: 1100 }, { x: 1500, y: 300 }]
                 },
 
                 tips: [
@@ -395,11 +413,15 @@ export const MIND_ARENA_LEVELS = {
 
                 agents: [
                     { type: AGENT_TYPE.STALKER, spawn: { x: 1400, y: 200 } },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 1200, y: 300 } },
                     { type: AGENT_TYPE.STRATEGIST, spawn: { x: 1800, y: 800 } },
+                    { type: AGENT_TYPE.STRATEGIST, spawn: { x: 1600, y: 900 } },
                     {
                         type: AGENT_TYPE.AMBUSHER, spawn: { x: 1000, y: 500 },
                         ambushPoints: [{ x: 600, y: 400 }, { x: 1200, y: 700 }, { x: 1000, y: 1000 }]
                     },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 500, y: 300 }, guardTarget: 'ci_1' },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1500, y: 400 }, guardTarget: 'ci_3' },
                 ],
 
                 tasks: [
@@ -444,6 +466,7 @@ export const MIND_ARENA_LEVELS = {
                     restArea: { x: 2000, y: 400 },
                     doorOne: { x: 800, y: 600 },
                     doorTwo: { x: 1600, y: 700 },
+                    healthKits: [{ x: 500, y: 400 }, { x: 1100, y: 500 }, { x: 1600, y: 400 }, { x: 800, y: 1000 }, { x: 1300, y: 1100 }, { x: 1900, y: 1200 }, { x: 400, y: 800 }, { x: 2100, y: 800 }]
                 },
 
                 tips: [
@@ -483,9 +506,14 @@ export const MIND_ARENA_LEVELS = {
 
                 agents: [
                     { type: AGENT_TYPE.STALKER, spawn: { x: 1200, y: 300 } },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 1000, y: 400 } },
                     { type: AGENT_TYPE.STALKER, spawn: { x: 1800, y: 1200 } },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 1600, y: 1100 } },
                     { type: AGENT_TYPE.RACER, spawn: { x: 2000, y: 500 } },
-                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1500, y: 800 }, guardTarget: 'chain_end' },
+                    { type: AGENT_TYPE.RACER, spawn: { x: 2100, y: 600 } },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1500, y: 800 }, guardTarget: 'fa_door' },
+                    { type: AGENT_TYPE.AMBUSHER, spawn: { x: 600, y: 1100 }, ambushPoints: [{ x: 500, y: 1000 }, { x: 700, y: 1200 }] },
+                    { type: AGENT_TYPE.STRATEGIST, spawn: { x: 1200, y: 500 } },
                 ],
 
                 tasks: [
@@ -531,6 +559,7 @@ export const MIND_ARENA_LEVELS = {
                     restArea: { x: 1900, y: 1100 },
                     doorOne: { x: 700, y: 700 },
                     doorTwo: { x: 1600, y: 600 },
+                    healthKits: [{ x: 500, y: 500 }, { x: 1000, y: 600 }, { x: 1300, y: 500 }, { x: 700, y: 1100 }, { x: 1600, y: 900 }, { x: 1900, y: 600 }, { x: 1200, y: 1200 }, { x: 400, y: 300 }, { x: 2100, y: 1300 }, { x: 200, y: 400 }]
                 },
 
                 tips: [
@@ -556,13 +585,18 @@ export const MIND_ARENA_LEVELS = {
 
                 agents: [
                     { type: AGENT_TYPE.STALKER, spawn: { x: 800, y: 300 } },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 600, y: 400 } },
                     { type: AGENT_TYPE.RACER, spawn: { x: 2000, y: 400 } },
-                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1400, y: 900 }, guardTarget: 'elite_vault' },
+                    { type: AGENT_TYPE.RACER, spawn: { x: 1800, y: 300 } },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1400, y: 900 }, guardTarget: 'eo_vault' },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 800, y: 700 }, guardTarget: 'eo_zone1' },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1800, y: 500 }, guardTarget: 'eo_zone2' },
                     {
                         type: AGENT_TYPE.AMBUSHER, spawn: { x: 1000, y: 700 },
                         ambushPoints: [{ x: 700, y: 500 }, { x: 1300, y: 600 }]
                     },
                     { type: AGENT_TYPE.STRATEGIST, spawn: { x: 1800, y: 1100 } },
+                    { type: AGENT_TYPE.STRATEGIST, spawn: { x: 1600, y: 1200 } },
                 ],
 
                 tasks: [
@@ -613,6 +647,7 @@ export const MIND_ARENA_LEVELS = {
                     restArea: { x: 2100, y: 1200 },
                     doorOne: { x: 900, y: 500 },
                     doorTwo: { x: 1500, y: 700 },
+                    healthKits: [{ x: 500, y: 400 }, { x: 1200, y: 300 }, { x: 900, y: 800 }, { x: 1900, y: 500 }, { x: 700, y: 1200 }, { x: 1500, y: 1000 }, { x: 1800, y: 1200 }, { x: 1100, y: 1100 }, { x: 300, y: 600 }, { x: 2100, y: 700 }]
                 },
 
                 tips: [
@@ -639,14 +674,20 @@ export const MIND_ARENA_LEVELS = {
 
                 agents: [
                     { type: AGENT_TYPE.STALKER, spawn: { x: 600, y: 200 } },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 500, y: 300 } },
                     { type: AGENT_TYPE.STALKER, spawn: { x: 2000, y: 1200 } },
+                    { type: AGENT_TYPE.STALKER, spawn: { x: 1900, y: 1100 } },
                     { type: AGENT_TYPE.RACER, spawn: { x: 1800, y: 300 } },
+                    { type: AGENT_TYPE.RACER, spawn: { x: 1600, y: 400 } },
                     { type: AGENT_TYPE.DEFENDER, spawn: { x: 1200, y: 600 }, guardTarget: 'fm_master_gate' },
+                    { type: AGENT_TYPE.DEFENDER, spawn: { x: 1200, y: 750 }, guardTarget: 'fm_zone' },
                     {
                         type: AGENT_TYPE.AMBUSHER, spawn: { x: 1000, y: 1000 },
                         ambushPoints: [{ x: 500, y: 500 }, { x: 1500, y: 800 }, { x: 800, y: 1200 }]
                     },
+                    { type: AGENT_TYPE.STRATEGIST, spawn: { x: 1000, y: 400 } },
                     { type: AGENT_TYPE.MASTERMIND, spawn: { x: 1200, y: 400 } },
+                    { type: AGENT_TYPE.PATROL, spawn: { x: 2000, y: 200 } },
                 ],
 
                 tasks: [
@@ -707,6 +748,7 @@ export const MIND_ARENA_LEVELS = {
                     restArea: { x: 2100, y: 1000 },
                     doorOne: { x: 800, y: 600 },
                     doorTwo: { x: 1600, y: 700 },
+                    healthKits: [{ x: 400, y: 400 }, { x: 1000, y: 300 }, { x: 1900, y: 800 }, { x: 1300, y: 800 }, { x: 600, y: 1200 }, { x: 1700, y: 1300 }, { x: 1200, y: 1000 }, { x: 700, y: 700 }, { x: 1600, y: 500 }, { x: 2100, y: 1400 }]
                 },
 
                 tips: [

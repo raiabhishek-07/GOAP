@@ -24,7 +24,7 @@ export class GamePlayer extends BaseSurvivor {
         this.stamina = 100;
         this.maxStamina = 100;
         this.staminaRegen = 12; // per second
-        this.healthKits = 0;
+        this.medKits = 0;
 
         // Combat
         this.attackCooldown = 0;
@@ -37,6 +37,11 @@ export class GamePlayer extends BaseSurvivor {
         this.dashSpeed = 600;
         this.isDashing = false;
 
+        // Abilities
+        this.isInvisible = false;
+        this.invisTimer = 0;
+        this.invisCooldown = 0; // 20s cooldown period
+
         // Vehicles
         this.isDriving = false;
         this.drivenCar = null;
@@ -45,7 +50,7 @@ export class GamePlayer extends BaseSurvivor {
     // ─── DAMAGE ─────────────────────────────────────────
 
     takeDamage(amount) {
-        if (this.isFlashing || this.isDashing) return;
+        if (this.isFlashing || this.isDashing || this.isInvisible) return;
         this.health = Math.max(0, this.health - amount);
         SoundManager.damageTaken();
 

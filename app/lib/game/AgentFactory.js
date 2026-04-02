@@ -10,6 +10,7 @@ import {
     AgentBelief, AgentAction, AgentGoal,
     CountdownTimer, IdleStrategy, MoveStrategy,
     WanderStrategy, AttackStrategy, HealStrategy, FleeAndHealStrategy, GoapPlanner,
+    SuppressAndFleeStrategy, ReinforceTeammateStrategy,
 } from '../goap/engine.js';
 
 // ─── TACTICAL AGENT (base for all 7 types) ──────────────────
@@ -57,6 +58,7 @@ export class TacticalAgent extends BaseSurvivor {
         this.isMoving = false;
         this.playerTarget = null;
         this.currentTaskTarget = null;
+        this.hasCloned = false; // For mitosis power-up
         this.patrolPath = config.patrolPath || [];
         this.patrolIndex = 0;
         this.ambushPoints = config.ambushPoints || [];
@@ -65,6 +67,7 @@ export class TacticalAgent extends BaseSurvivor {
         this.planTimer = new CountdownTimer(0.8);
         this.planTimer.start();
         this.actionLog = [];
+        this._signaledBackup = false;
 
         // Visual theming
         this._applyTheme();
@@ -101,6 +104,14 @@ export class TacticalAgent extends BaseSurvivor {
     }
 
     /**
+     * Shoot at a target (used by tactical strategies)
+     */
+    shoot(target) {
+        // Emit event for GameScene to handle visual/sound/damage
+        this.emit('agent_shoot', target);
+    }
+
+    /**
      * Initialize GOAP beliefs, actions, and goals per agent type
      */
     initGOAP(locations, obstacles = []) {
@@ -125,15 +136,23 @@ export class TacticalAgent extends BaseSurvivor {
         b('Nothing', () => false);
         b('AgentMoving', () => this.isMoving);
         b('PlayerInChaseRange', () => {
-            if (!this.playerTarget) return false;
+            if (!this.playerTarget || this.playerTarget.isInvisible) return false;
             return this._distTo(this.playerTarget.position) < this.chaseRange;
         });
         b('PlayerInAttackRange', () => {
-            if (!this.playerTarget) return false;
+            if (!this.playerTarget || this.playerTarget.isInvisible) return false;
             return this._distTo(this.playerTarget.position) < this.attackRange;
         });
-        b('HealthLow', () => this.health < 50);
+        b('HealthLow', () => this.health < 40);
         b('SquadHasIntel', () => this.matchManager?.squadIntel?.playerSpotted === true);
+        b('SquadInDistress', () => {
+            const distress = this.matchManager?.squadIntel?.distressSignal;
+            if (!distress) return false;
+            // Don't respond to our own distress signal
+            return distress.agentId !== this.id;
+        });
+        b('TeammateAssisted', () => false); // Completed by ReinforceTeammateStrategy
+        b('SquadHelped', () => false);     // Completed by SignalDistress action
 
         // Location beliefs
         if (this.locations.foodShack) {
@@ -211,10 +230,45 @@ export class TacticalAgent extends BaseSurvivor {
 
         this.actions.add(
             AgentAction.builder('Scamper and Recover')
-                .withStrategy(new FleeAndHealStrategy(this, () => this.playerTarget?.position, this.obstacles, 4, 450))
+                .withStrategy(new SuppressAndFleeStrategy(
+                    this, 
+                    () => this.playerTarget?.position, 
+                    this.obstacles, 
+                    6
+                ))
                 .addPrecondition(this.beliefs.PlayerInChaseRange)
                 .addEffect(this.beliefs.IsHealthy)
                 .withCost(1) // Very cheap, prefer this if seen!
+                .build()
+        );
+
+        // ── UNIVERSAL: Squad Support ──
+        this.actions.add(
+            AgentAction.builder('Call for Backup')
+                .withStrategy({
+                    canPerform: () => true,
+                    start: () => {
+                        this.matchManager?.sendDistressSignal(this.id, this.position);
+                        this._signaledBackup = true;
+                    },
+                    update: () => true,
+                    stop: () => {},
+                    complete: () => this._signaledBackup
+                })
+                .addPrecondition(this.beliefs.HealthLow)
+                .addEffect(this.beliefs.SquadHelped)
+                .build()
+        );
+
+        this.actions.add(
+            AgentAction.builder('Reinforce Teammate')
+                .withStrategy(new ReinforceTeammateStrategy(
+                    this,
+                    () => this.matchManager?.squadIntel?.distressSignal?.pos
+                ))
+                .addPrecondition(this.beliefs.SquadInDistress)
+                .addEffect(this.beliefs.TeammateAssisted)
+                .withCost(2)
                 .build()
         );
 
@@ -479,6 +533,29 @@ export class TacticalAgent extends BaseSurvivor {
                 })
                 .withDesiredEffect(this.beliefs.IsHealthy).build()
             );
+
+            this.goals.add(
+                AgentGoal.builder('Request Assistance').withPriority(() => {
+                    return (this.health < 40 && this.beliefs.PlayerInAttackRange?.evaluate()) ? 30 : 0;
+                })
+                .withDesiredEffect(this.beliefs.SquadHelped).build()
+            );
+
+            this.goals.add(
+                AgentGoal.builder('Support Squad').withPriority(() => {
+                    // Only reinforce if NOT in direct personal combat (don't get flanked)
+                    if (this.beliefs.PlayerInAttackRange?.evaluate()) return 0;
+                    
+                    // Respond to distress with ULTRA HIGH priority (Rescue comrades)
+                    return this.beliefs.SquadInDistress?.evaluate() ? 100 : 0;
+                })
+                .withDesiredEffect(this.beliefs.TeammateAssisted).build()
+            );
+
+            this.goals.add(
+                AgentGoal.builder('Protect Perimeter').withPriority(2)
+                    .withDesiredEffect(this.beliefs.Guarding || this.beliefs.Nothing).build()
+            );
         }
 
         switch (type) {
@@ -695,6 +772,22 @@ export class TacticalAgent extends BaseSurvivor {
      */
     takeDamage(amount) {
         this.health = Math.max(0, this.health - amount);
+        
+        // 🚨 CLONING MECHANISM: One-time mitosis on death
+        if (this.health <= 0 && !this.hasCloned) {
+            this.hasCloned = true;
+            this.emit('agent_clone', this);
+        }
+
+        // 🚨 MUTUAL DEFENSE: If agent is hit by user, notify all teammates immediately
+        if (amount > 0 && this.matchManager && this.health > 0) {
+            this.matchManager.sendDistressSignal(this.id, this.position);
+            
+            // Log it in HUD history if possible
+            if (this.matchManager.hudScene?.addLog) {
+                this.matchManager.hudScene.addLog(`SQUAD UNIT UNDER FIRE: ${this.id}`, '#f87171');
+            }
+        }
     }
 
     /**

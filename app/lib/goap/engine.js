@@ -600,6 +600,88 @@ export class FleeAndHealStrategy {
     stop() { this.agent.stopMoving(); }
 }
 
+/**
+ * Suppress and Flee Strategy
+ * Shoot at target while running to cover and healing
+ */
+export class SuppressAndFleeStrategy {
+    constructor(agent, targetFn, obstacles = [], healRate = 5) {
+        this.agent = agent;
+        this.targetFn = targetFn;
+        this.flee = new FleeAndHealStrategy(agent, targetFn, obstacles, healRate);
+        this.shootTimer = 0;
+        this.shootInterval = 0.6; // Shoot every 0.6s
+    }
+
+    get canPerform() { return true; }
+    get complete() { return this.flee.complete; }
+
+    start() {
+        this.flee.start();
+        this.shootTimer = 0;
+    }
+
+    update(dt) {
+        this.flee.update(dt);
+        
+        // Suppress target while fleeing
+        this.shootTimer += dt;
+        if (this.shootTimer >= this.shootInterval) {
+            const target = this.targetFn();
+            if (target) {
+                // If agent has shoot method, use it
+                if (this.agent.shoot) {
+                    this.agent.shoot(target.position || target);
+                }
+            }
+            this.shootTimer = 0;
+        }
+    }
+
+    stop() { this.flee.stop(); }
+}
+
+/**
+ * Reinforce Teammate Strategy
+ * Move to a teammate's position who is in distress
+ */
+export class ReinforceTeammateStrategy {
+    constructor(agent, distressPosFn) {
+        this.agent = agent;
+        this.distressPosFn = distressPosFn;
+        this._complete = false;
+    }
+
+    get canPerform() { return !!this.distressPosFn(); }
+    get complete() { 
+        if (this._complete) return true;
+        const dist = this.distressPosFn();
+        if (!dist) return true;
+        const dx = this.agent.position.x - dist.x;
+        const dy = this.agent.position.y - dist.y;
+        return Math.sqrt(dx * dx + dy * dy) < 80; // Close enough to assist
+    }
+
+    start() {
+        const target = this.distressPosFn();
+        if (target) {
+            this.agent.moveTo(target);
+        }
+    }
+
+    update(dt) {
+        const target = this.distressPosFn();
+        if (!target) {
+            this._complete = true;
+            return;
+        }
+        // Update destination in case teammate is moving
+        this.agent.moveTo(target);
+    }
+
+    stop() { this.agent.stopMoving(); }
+}
+
 // ---- Sensor (from Sensor.cs) — 2D distance-based ----
 export class Sensor {
     constructor(agent, detectionRadius, targetTag = 'player') {
